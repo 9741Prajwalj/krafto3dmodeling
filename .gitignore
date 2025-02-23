@@ -1,7 +1,3 @@
-# Ignore .env file
-.env
-
-# Ignore all zip files
 *.zip
 
 # Node.js dependencies
