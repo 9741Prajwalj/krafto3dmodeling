@@ -1,5 +1,15 @@
+# Ignore all zip files
 *.zip
+
+# Node.js dependencies
 node_modules/
+
+# Laravel or PHP Logs
 storage/logs/
-vendor/krafto.zip
-codecanyon-AeElzcAs-amazcart-laravel-ecommerce-system-cms.zip
+
+# Composer Dependencies
+vendor/
+
+# Ignore all zip files except specific ones
+*.zip
+!example.zip
