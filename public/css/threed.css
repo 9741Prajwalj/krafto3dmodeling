@@ -420,7 +420,7 @@ a:focus-visible {
 /* power start😁 */
 
 .container3d {
-	perspective: 800px;
+	perspective: 700px;
 }
 
 #box-canvas {
@@ -435,6 +435,3 @@ a:focus-visible {
 	0% { transform: rotateY(0deg); }
 	100% { transform: rotateY(360deg); }
 }
-
-
-

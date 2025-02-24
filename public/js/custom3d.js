@@ -282,45 +282,158 @@ function createSideGeometry(baseGeometry, size, folds, hasMiddleLayer) {
 // --------------------------------------------------
 // Clickable copyright
 
+// Variables for image manipulation
+let isResizing = false;
+let isRotating = false;
+let isDragging = false;
+let startX, startY;
+let initialWidth, initialHeight, initialRotation;
+let rotateHandle, deleteButton;
+
+// Function to create the photo upload plane with resize, rotate, and delete controls
 function createCopyright() {
+    // Create canvas for the photo texture
     const canvas = document.createElement('canvas');
     canvas.width = box.params.copyrightSize[0] * 10;
     canvas.height = box.params.copyrightSize[1] * 10;
     const planeGeometry = new THREE.PlaneGeometry(box.params.copyrightSize[0], box.params.copyrightSize[1]);
 
+    // Clear the canvas
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.width);
-    ctx.fillStyle = '#000000';
-    ctx.font = '22px sans-serif';
-    ctx.textAlign = 'end';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Create texture and plane
     const texture = new THREE.CanvasTexture(canvas);
     copyright = new THREE.Mesh(planeGeometry, new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
-        opacity: .5
+        opacity: 1
     }));
-
     scene.add(copyright);
+
+    // Create a hidden file input for uploading images
+    const uploadInput = document.createElement('input');
+    uploadInput.type = 'file';
+    uploadInput.accept = 'image/*';
+    uploadInput.style.display = 'none';
+    document.body.appendChild(uploadInput);
+
+    // Event Listener for the Upload Button
+    const uploadBtn = document.getElementById('upload-btn');
+    uploadBtn.addEventListener('click', () => {
+        uploadInput.click();
+    });
+
+    // Handle Image Upload
+    uploadInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    texture.needsUpdate = true;
+                    createImageControls();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
     trackLinks();
 }
 
+// Function to create resize, rotate, and delete controls
+function createImageControls() {
+    // Rotate Handle
+    rotateHandle = document.createElement('div');
+    rotateHandle.classList.add('rotate-handle');
+    document.body.appendChild(rotateHandle);
+
+    // Delete Button
+    deleteButton = document.createElement('button');
+    deleteButton.classList.add('delete-button');
+    deleteButton.innerHTML = 'X';
+    document.body.appendChild(deleteButton);
+
+    // Event Listeners for Controls
+    rotateHandle.addEventListener('mousedown', startRotate);
+    deleteButton.addEventListener('click', deleteImage);
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+}
+
+// Start rotating
+function startRotate(event) {
+    isRotating = true;
+    startX = event.clientX;
+    startY = event.clientY;
+    initialRotation = copyright.rotation.z;
+    document.body.style.cursor = 'grabbing';
+}
+
+// Rotate image
+function rotateImage(event) {
+    const deltaX = event.clientX - startX;
+    copyright.rotation.z = initialRotation + deltaX * 0.01;
+}
+
+// Delete image
+function deleteImage() {
+    scene.remove(copyright);
+    rotateHandle.remove();
+    deleteButton.remove();
+}
+
+// Handle Mouse Movement
+function onMouseMove(event) {
+    if (isRotating) {
+        rotateImage(event);
+    }
+}
+
+// Stop Rotating or Resizing
+function onMouseUp() {
+    isRotating = false;
+    document.body.style.cursor = 'auto';
+}
+
+// Function to handle mouse interaction
 function trackLinks() {
     document.addEventListener('mousemove', (e) => {
         updateMousePosition(e.clientX, e.clientY);
-        
+        checkCopyrightIntersect();
     }, false);
+
     document.addEventListener('click', (e) => {
         updateMousePosition(
             e.targetTouches ? e.targetTouches[0].pageX : e.clientX,
             e.targetTouches ? e.targetTouches[0].pageY : e.clientY
         );
+        checkCopyrightIntersect();
     });
 
     function updateMousePosition(x, y) {
         mouse.x = x / window.innerWidth * 2 - 1;
         mouse.y = -y / window.innerHeight * 2 + 1;
     }
+}
+
+// Function to check mouse intersection with the plane
+function checkCopyrightIntersect() {
+    let isHovered = false;
+    rayCaster.setFromCamera(mouse, camera);
+    const intersects = rayCaster.intersectObject(copyright);
+    if (intersects.length) {
+        document.body.style.cursor = 'pointer';
+        isHovered = true;
+    } else {
+        document.body.style.cursor = 'auto';
+    }
+    return isHovered;
 }
 
 // End of Clickable copyright
@@ -588,5 +701,3 @@ function setupFaceViewControls() {
         moveCamera({ x: 0, y: -distance, z: 0 }, box.position);
     });
 }
-
-
