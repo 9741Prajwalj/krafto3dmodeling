@@ -19,6 +19,8 @@
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     <script src='https://unpkg.co/gsap@3/dist/gsap.min.js'></script>
     <script src='https://unpkg.co/gsap@3/dist/ScrollTrigger.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.141.0/examples/js/controls/TransformControls.js"></script>
     <script type="module" src="{{ asset('js/custom3d.js') }}"></script>
 </head>
 <body>
