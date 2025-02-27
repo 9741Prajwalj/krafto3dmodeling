@@ -435,3 +435,21 @@ a:focus-visible {
 	0% { transform: rotateY(0deg); }
 	100% { transform: rotateY(360deg); }
 }
+
+
+.rotate-handle {
+	width: 20px;
+	height: 20px;
+	background: #ffeb3b;
+	border-radius: 50%;
+	position: absolute;
+	cursor: pointer;
+}
+
+.delete-button {
+	position: absolute;
+	background: red;
+	color: white;
+	border: none;
+	cursor: pointer;
+}

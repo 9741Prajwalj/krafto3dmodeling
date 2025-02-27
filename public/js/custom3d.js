@@ -136,7 +136,8 @@ function initScene() {
     orbit.enableDamping = true;
     orbit.autoRotate = false;
     orbit.autoRotateSpeed = .25;
-    
+
+    // initializeBoxScene();
     setupFaceViewControls();
     createCopyright();
     createBoxElements();
@@ -149,6 +150,7 @@ function initScene() {
 function render() {
     orbit.update();
     lightHolder.quaternion.copy(camera.quaternion);
+    
     renderer.render(scene, camera);
     requestAnimationFrame(render);
 }
@@ -284,7 +286,7 @@ function createSideGeometry(baseGeometry, size, folds, hasMiddleLayer) {
 
 // Variables for image manipulation
 let isResizing = false;
-let isRotating = false;
+// let isRotating = false;
 let isDragging = false;
 let startX, startY;
 let initialWidth, initialHeight, initialRotation;
@@ -336,13 +338,18 @@ function createCopyright() {
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     texture.needsUpdate = true;
                     createImageControls();
+
+                    // Center the copyright on the front face
+                    copyright.position.copy(box.els.frontHalf.length.side.position);
+                    copyright.position.x += box.params.length / 2;  // Center of length
+                    copyright.position.y = box.els.frontHalf.length.side.position.y;  // Center of depth
+                    copyright.position.z += box.params.thickness;  // Just above surface
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         }
     });
-    trackLinks();
 }
 
 // Function to create resize, rotate, and delete controls
@@ -373,53 +380,6 @@ function startRotate(event) {
     startY = event.clientY;
     initialRotation = copyright.rotation.z;
     document.body.style.cursor = 'grabbing';
-}
-
-// Rotate image
-function rotateImage(event) {
-    const deltaX = event.clientX - startX;
-    copyright.rotation.z = initialRotation + deltaX * 0.01;
-}
-
-// Delete image
-function deleteImage() {
-    scene.remove(copyright);
-    rotateHandle.remove();
-    deleteButton.remove();
-}
-
-// Handle Mouse Movement
-function onMouseMove(event) {
-    if (isRotating) {
-        rotateImage(event);
-    }
-}
-
-// Stop Rotating or Resizing
-function onMouseUp() {
-    isRotating = false;
-    document.body.style.cursor = 'auto';
-}
-
-// Function to handle mouse interaction
-function trackLinks() {
-    document.addEventListener('mousemove', (e) => {
-        updateMousePosition(e.clientX, e.clientY);
-        checkCopyrightIntersect();
-    }, false);
-
-    document.addEventListener('click', (e) => {
-        updateMousePosition(
-            e.targetTouches ? e.targetTouches[0].pageX : e.clientX,
-            e.targetTouches ? e.targetTouches[0].pageY : e.clientY
-        );
-        checkCopyrightIntersect();
-    });
-
-    function updateMousePosition(x, y) {
-        mouse.x = x / window.innerWidth * 2 - 1;
-        mouse.y = -y / window.innerHeight * 2 + 1;
-    }
 }
 
 // Function to check mouse intersection with the plane
@@ -520,9 +480,10 @@ function updatePanelsTransform() {
     box.els.backHalf.width.bottom.rotation.x = -box.animated.flapAngles.backHalf.width.bottom;
     box.els.backHalf.length.bottom.rotation.x = -box.animated.flapAngles.backHalf.length.bottom;
 
+    // Center copyright on front face
     copyright.position.copy(box.els.frontHalf.length.side.position);
-    copyright.position.x += .5 * box.params.length - .5 * box.params.copyrightSize[0];
-    copyright.position.y -= .5 * (box.params.depth - box.params.copyrightSize[1]);
+    copyright.position.x += box.params.length / 2;
+    copyright.position.y = box.els.frontHalf.length.side.position.y;
     copyright.position.z += box.params.thickness;
 }
 
@@ -575,7 +536,6 @@ function createZooming() {
 
 // --------------------------------------------------
 // Range sliders for box parameters
-
 function createControls() {
     const gui = new GUI();
     const modalBody = document.querySelector('.content11');
@@ -671,33 +631,43 @@ function setupFaceViewControls() {
     }
 
     // Event Listeners for each button
-    btnFront.addEventListener('click', () => {
-        selectedFace = 'front';
-        moveCamera({ x: -80, y: 60, z: distance }, box.position);
-    });
+    btnFront.addEventListener('click', () => {selectedFace = 'front'; moveCamera({ x: -80, y: 60, z: distance }, box.position);});
+    btnBack.addEventListener('click', () => {selectedFace = 'back'; moveCamera({ x: 0, y: 0, z: -distance }, box.position);});
+    btnLeft.addEventListener('click', () => {selectedFace = 'left'; moveCamera({ x: -distance, y: 0, z: 0 }, box.position);});
+    btnRight.addEventListener('click', () => {selectedFace = 'right'; moveCamera({ x: distance, y: 0, z: 0 }, box.position);});
+    btnTop.addEventListener('click', () => {selectedFace = 'top'; moveCamera({ x: 0, y: distance, z: 0 }, box.position);});
+    btnBottom.addEventListener('click', () => {selectedFace = 'bottom'; moveCamera({ x: 0, y: -distance, z: 0 }, box.position);});
 
-    btnBack.addEventListener('click', () => {
-        selectedFace = 'back';
-        moveCamera({ x: 0, y: 0, z: -distance }, box.position);
-    });
+}
 
-    btnLeft.addEventListener('click', () => {
-        selectedFace = 'left';
-        moveCamera({ x: -distance, y: 0, z: 0 }, box.position);
-    });
+// For Rotate button
+let isRotating = false;
+let rotationRequest; // Store the animation frame request
 
-    btnRight.addEventListener('click', () => {
-        selectedFace = 'right';
-        moveCamera({ x: distance, y: 0, z: 0 }, box.position);
-    });
+// Event Listener for Rotate Button
+document.getElementById('rotate-btn').addEventListener('click', () => {
+    isRotating = !isRotating; // Toggle rotation state using '!'
+    
+    if (isRotating) {
+        animateRotation(); // Start rotation
+    }
+});
 
-    btnTop.addEventListener('click', () => {
-        selectedFace = 'top';
-        moveCamera({ x: 0, y: distance, z: 0 }, box.position);
-    });
+// Function to Animate Rotation of the 3D Box
+function animateRotation() {
+    if (!isRotating) return; // Stop rotation if the state is false
 
-    btnBottom.addEventListener('click', () => {
-        selectedFace = 'bottom';
-        moveCamera({ x: 0, y: -distance, z: 0 }, box.position);
-    });
+    if (box && box.els && box.els.group) {
+        // Rotate the box slightly to the right on the Y-axis
+        box.els.group.rotation.y += 0.25 * 0.01;
+    } else {
+        console.warn('Box group not found in the scene.');
+    }
+
+    // Update the scene
+    orbit.update();
+    renderer.render(scene, camera);
+
+    // Continuously animate while rotating is true
+    rotationRequest = requestAnimationFrame(animateRotation);
 }

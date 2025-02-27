@@ -28,6 +28,7 @@
         "compression-webpack-plugin": "^9.0.0",
         "gsap": "^3.12.7",
         "jquery-ui": "^1.13.0",
+        "lil-gui": "^0.20.0",
         "three": "^0.173.0",
         "toastr": "^2.1.4"
     }

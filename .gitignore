@@ -5,6 +5,7 @@ node_modules/
 
 # Laravel or PHP Logs
 storage/logs/
+storage/app/
 
 # Composer Dependencies
 vendor/
