@@ -3,8 +3,14 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {mergeBufferGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {GUI} from 'three/addons/libs/lil-gui.module.min.js';
 
+// Check for gsap (loaded via HTML script tags)
+if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+    console.error('gsap or ScrollTrigger not loaded. Ensure script tags are present in HTML.');
+}
+
 const container = document.querySelector('.container3d');
 const boxCanvas = document.querySelector('#box-canvas');
+let textMesh = null; // Variable to store the text mesh
 
 let box = {
     params: {
@@ -83,7 +89,6 @@ initScene();
 createControls();
 window.addEventListener('resize', updateSceneSize);
 
-
 // --------------------------------------------------
 // Three.js scene
 
@@ -98,7 +103,6 @@ function initScene() {
 
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(45, (container.clientWidth) / container.clientHeight, 10, 1000);    
-    
     camera.position.set(40, 90, 110);
     rayCaster = new THREE.Raycaster();
     mouse = new THREE.Vector2(0, 0);
@@ -283,7 +287,6 @@ function createSideGeometry(baseGeometry, size, folds, hasMiddleLayer) {
 
 // --------------------------------------------------
 // Clickable copyright
-
 // Variables for image manipulation
 let isResizing = false;
 // let isRotating = false;
@@ -294,13 +297,15 @@ let rotateHandle, deleteButton;
 
 // Function to create the photo upload plane with resize, rotate, and delete controls
 function createCopyright() {
-    // Create canvas for the photo texture
+    const textInput = document.querySelector('.text-input'); // Match your HTML class
+
+    // Create canvas for the photo texture and text
     const canvas = document.createElement('canvas');
     canvas.width = box.params.copyrightSize[0] * 10;
     canvas.height = box.params.copyrightSize[1] * 10;
     const planeGeometry = new THREE.PlaneGeometry(box.params.copyrightSize[0], box.params.copyrightSize[1]);
 
-    // Clear the canvas
+    // Get canvas context
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -312,6 +317,24 @@ function createCopyright() {
         opacity: 1
     }));
     scene.add(copyright);
+
+    // Function to update canvas with text
+    function updateCanvasText() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous content
+        ctx.fillStyle = '#000000'; // Text color
+        ctx.font = '50px Helvetica'; // Adjust font size and family as needed
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const text = textInput.value || 'Your Text Here';
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2); // Center the text
+        texture.needsUpdate = true; // Update the texture
+    }
+
+    // Initial text render
+    updateCanvasText();
+
+    // Event listener for text input changes
+    textInput.addEventListener('input', updateCanvasText);
 
     // Create a hidden file input for uploading images
     const uploadInput = document.createElement('input');
@@ -334,8 +357,15 @@ function createCopyright() {
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Draw image
+                    // Optionally, redraw text over the image
+                    ctx.fillStyle = '#000000'; // Text color
+                    ctx.font = '50px Helvetica';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    const text = textInput.value || 'Your Text Here';
+                    ctx.fillText(text, canvas.width / 2, canvas.height / 2); // Draw text over image
                     texture.needsUpdate = true;
                     createImageControls();
 
@@ -350,9 +380,15 @@ function createCopyright() {
             reader.readAsDataURL(file);
         }
     });
+
+    // Initial positioning
+    copyright.position.copy(box.els.frontHalf.length.side.position);
+    copyright.position.x += box.params.length / 2;
+    copyright.position.y = box.els.frontHalf.length.side.position.y;
+    copyright.position.z += box.params.thickness;
 }
 
-// Function to create resize, rotate, and delete controls
+// Function to create resize, rotate, and delete controls (unchanged)
 function createImageControls() {
     // Rotate Handle
     rotateHandle = document.createElement('div');
@@ -382,20 +418,6 @@ function startRotate(event) {
     document.body.style.cursor = 'grabbing';
 }
 
-// Function to check mouse intersection with the plane
-function checkCopyrightIntersect() {
-    let isHovered = false;
-    rayCaster.setFromCamera(mouse, camera);
-    const intersects = rayCaster.intersectObject(copyright);
-    if (intersects.length) {
-        document.body.style.cursor = 'pointer';
-        isHovered = true;
-    } else {
-        document.body.style.cursor = 'auto';
-    }
-    return isHovered;
-}
-
 // End of Clickable copyright
 // --------------------------------------------------
 
@@ -403,73 +425,138 @@ function checkCopyrightIntersect() {
 // Animation
 
 function createFoldingAnimation() {
-    gsap.timeline({
-        scrollTrigger: {
-            trigger: '.page3d',
-            start: '0% 0%',
-            end: '100% 100%',
-            scrub: true,
-        },
+    // Initial state: box starts closed
+    box.animated.openingAngle = 0; // Fully closed
+    box.animated.flapAngles.backHalf.width.top = 0;
+    box.animated.flapAngles.backHalf.width.bottom = 0;
+    box.animated.flapAngles.backHalf.length.top = 0;
+    box.animated.flapAngles.backHalf.length.bottom = 0;
+    box.animated.flapAngles.frontHalf.width.top = 0;
+    box.animated.flapAngles.frontHalf.width.bottom = 0;
+    box.animated.flapAngles.frontHalf.length.top = 0;
+    box.animated.flapAngles.frontHalf.length.bottom = 0;
+    // Update the initial state
+    updatePanelsTransform();
+    // Timeline for closing the box (from open to closed)
+    const closeTimeline = gsap.timeline({
+        paused: true, // Start paused, triggered manually
         onUpdate: () => {
             updatePanelsTransform();
-        }
-    })
+        },
+        defaults: { ease: 'power1.inOut' }
+    });
+
+    closeTimeline
+        .to(box.animated.flapAngles.frontHalf.length, {
+            duration: 0.9,
+            top: 0,
+            bottom: 0,
+            ease: 'back.out(4)'
+        })
+        .to(box.animated.flapAngles.backHalf.length, {
+            duration: 0.7,
+            top: 0,
+            bottom: 0,
+            ease: 'back.out(3)'
+        }, "-=0.7")
+        .to([box.animated.flapAngles.backHalf.width, box.animated.flapAngles.frontHalf.width], {
+            duration: 0.6,
+            top: 0,
+            bottom: 0,
+            ease: 'back.out(3)'
+        }, "-=0.6")
         .to(box.animated, {
             duration: 1,
-            openingAngle: .5 * Math.PI,
+            openingAngle: 0,
+            ease: 'power1.inOut'
+        }, "-=0.5");
+
+    // Timeline for opening the box (from closed to open)
+    const openTimeline = gsap.timeline({
+        paused: true, // Start paused, triggered manually
+        onUpdate: () => {
+            updatePanelsTransform();
+        },
+        defaults: { ease: 'power1.inOut' }
+    });
+
+    openTimeline
+        .to(box.animated, {
+            duration: 1,
+            openingAngle: 0.5 * Math.PI, // Fully open
             ease: 'power1.inOut'
         })
         .to([box.animated.flapAngles.backHalf.width, box.animated.flapAngles.frontHalf.width], {
-            duration: .6,
-            bottom: .6 * Math.PI,
+            duration: 0.6,
+            bottom: 0.6 * Math.PI,
             ease: 'back.in(3)'
-        }, .9)
+        }, "-=0.5") // Overlap with opening for smooth transition
         .to(box.animated.flapAngles.backHalf.length, {
-            duration: .7,
-            bottom: .5 * Math.PI,
+            duration: 0.7,
+            bottom: 0.5 * Math.PI,
             ease: 'back.in(2)'
-        }, 1.1)
+        }, "-=0.4")
         .to(box.animated.flapAngles.frontHalf.length, {
-            duration: .8,
-            bottom: .49 * Math.PI,
+            duration: 0.8,
+            bottom: 0.49 * Math.PI,
             ease: 'back.in(3)'
-        }, 1.4)
+        }, "-=0.6")
         .to([box.animated.flapAngles.backHalf.width, box.animated.flapAngles.frontHalf.width], {
-            duration: .6,
-            top: .6 * Math.PI,
+            duration: 0.6,
+            top: 0.6 * Math.PI,
             ease: 'back.in(3)'
-        }, 1.4)
+        }, "-=0.5")
         .to(box.animated.flapAngles.backHalf.length, {
-            duration: .7,
-            top: .5 * Math.PI,
+            duration: 0.7,
+            top: 0.5 * Math.PI,
             ease: 'back.in(3)'
-        }, 1.7)
+        }, "-=0.6")
         .to(box.animated.flapAngles.frontHalf.length, {
-            duration: .9,
-            top: .49 * Math.PI,
+            duration: 0.9,
+            top: 0.49 * Math.PI,
             ease: 'back.in(4)'
-        }, 1.8)
+        }, "-=0.7");
+
+    // Event listener for "Close Box" button (optional)
+    const closeBtn = document.getElementById('close-box-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            openTimeline.pause(); // Stop opening if running
+            closeTimeline.restart(); // Start closing animation
+        });
+    }
+
+    // Event listener for "Open Box" button
+    const openBtn = document.getElementById('open-box-btn');
+    if (openBtn) {
+        openBtn.addEventListener('click', () => {
+            closeTimeline.pause(); // Stop closing if running
+            openTimeline.restart(); // Start opening animation
+        });
+    }
 }
 
+// No changes needed to updatePanelsTransform unless you want to tweak positioning further
 function updatePanelsTransform() {
-    // place width-sides aside of length-sides (not animated)
-    box.els.frontHalf.width.side.position.x = .5 * box.params.length;
-    box.els.backHalf.width.side.position.x = -.5 * box.params.length;
+    // Place width-sides aside of length-sides
+    box.els.frontHalf.width.side.position.x = 0.5 * box.params.length;
+    box.els.backHalf.width.side.position.x = -0.5 * box.params.length;
 
-    // rotate width-sides from 0 to 90 deg
+    // Rotate width-sides from 0 to 90 deg
     box.els.frontHalf.width.side.rotation.y = box.animated.openingAngle;
     box.els.backHalf.width.side.rotation.y = box.animated.openingAngle;
 
-    // move length-sides to keep the box centered
-    const cos = Math.cos(box.animated.openingAngle); // animates from 1 to 0
-    box.els.frontHalf.length.side.position.x = -.5 * cos * box.params.width;
-    box.els.backHalf.length.side.position.x = .5 * cos * box.params.width;
+    // Move length-sides to keep the box centered
+    const cos = Math.cos(box.animated.openingAngle);
+    box.els.frontHalf.length.side.position.x = -0.5 * cos * box.params.width;
+    box.els.backHalf.length.side.position.x = 0.5 * cos * box.params.width;
 
-    // move length-sides to define box inner space
-    const sin = Math.sin(box.animated.openingAngle); // animates from 0 to 1
-    box.els.frontHalf.length.side.position.z = .5 * sin * box.params.width;
-    box.els.backHalf.length.side.position.z = -.5 * sin * box.params.width;
+    // Move length-sides to define box inner space
+    const sin = Math.sin(box.animated.openingAngle);
+    box.els.frontHalf.length.side.position.z = 0.5 * sin * box.params.width;
+    box.els.backHalf.length.side.position.z = -0.5 * sin * box.params.width;
 
+    // Rotate flaps
     box.els.frontHalf.width.top.rotation.x = -box.animated.flapAngles.frontHalf.width.top;
     box.els.frontHalf.length.top.rotation.x = -box.animated.flapAngles.frontHalf.length.top;
     box.els.frontHalf.width.bottom.rotation.x = box.animated.flapAngles.frontHalf.width.bottom;
@@ -483,10 +570,19 @@ function updatePanelsTransform() {
     // Center copyright on front face
     copyright.position.copy(box.els.frontHalf.length.side.position);
     copyright.position.x += box.params.length / 2;
-    copyright.position.y = box.els.frontHalf.length.side.position.y;
-    copyright.position.z += box.params.thickness;
-}
+    copyright.position.y = 0; // Center vertically relative to box origin
+    copyright.position.z += box.params.thickness + 0.1;
+    copyright.rotation.copy(box.els.frontHalf.length.side.rotation);
 
+    // Update textMesh position (if still used)
+    if (textMesh) {
+        textMesh.position.copy(box.els.frontHalf.length.side.position);
+        textMesh.position.x += box.params.length / 2;
+        textMesh.position.y = 0;
+        textMesh.position.z += box.params.thickness + 0.1;
+        textMesh.rotation.copy(box.els.frontHalf.length.side.rotation);
+    }
+}
 // End of animation
 // --------------------------------------------------
 
@@ -612,8 +708,6 @@ function setupFaceViewControls() {
     const btnRight = document.querySelector('.b4');
     const btnTop = document.querySelector('.b5');
     const btnBottom = document.querySelector('.b6');
-
-    // Default distance from the box for all views
     const distance = 170;
 
     // Animate camera movement and orientation
@@ -656,18 +750,15 @@ document.getElementById('rotate-btn').addEventListener('click', () => {
 // Function to Animate Rotation of the 3D Box
 function animateRotation() {
     if (!isRotating) return; // Stop rotation if the state is false
-
     if (box && box.els && box.els.group) {
         // Rotate the box slightly to the right on the Y-axis
         box.els.group.rotation.y += 0.25 * 0.01;
     } else {
         console.warn('Box group not found in the scene.');
     }
-
     // Update the scene
     orbit.update();
     renderer.render(scene, camera);
-
     // Continuously animate while rotating is true
     rotationRequest = requestAnimationFrame(animateRotation);
 }

@@ -55,6 +55,8 @@
                                 <button class="btn upload" id="upload-btn">Upload</button>
                                 <button class="btn reset" id="reset-btn">Reset</button>
                                 <button class="btn rotate" id="rotate-btn">Rotate</button>
+                                <button class="btn close" id="close-box-btn">Open Box</button>
+                                <button class="btn open" id="open-box-btn">Close Box</button>
                             </div>
                             
                             <div class="button-group">

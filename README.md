@@ -59,3 +59,10 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+
+# My Awesome Project
+
+![Quickdraw Gitty up!](https://img.shields.io/badge/Quickdraw-Gitty%20up!-brightgreen)
+
+Welcome to my project! This is a sample repository to demonstrate how to add a custom badge.
