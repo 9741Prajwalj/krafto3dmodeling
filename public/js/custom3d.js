@@ -89,6 +89,9 @@ initScene();
 createControls();
 window.addEventListener('resize', updateSceneSize);
 
+updateSceneSize();
+renderer.render(scene, camera);
+
 // --------------------------------------------------
 // Three.js scene
 
@@ -149,6 +152,7 @@ function initScene() {
     createZooming();
 
     render();
+    
 }
 
 function render() {
@@ -287,26 +291,30 @@ function createSideGeometry(baseGeometry, size, folds, hasMiddleLayer) {
 
 // --------------------------------------------------
 // Clickable copyright
-// Variables for image manipulation
-let isResizing = false;
-// let isRotating = false;
-let isDragging = false;
-let startX, startY;
-let initialWidth, initialHeight, initialRotation;
-let rotateHandle, deleteButton;
 
-// Function to create the photo upload plane with resize, rotate, and delete controls
 function createCopyright() {
-    const textInput = document.querySelector('.text-input'); // Match your HTML class
+    const textInput = document.querySelector('.text-input');
+    if (!textInput) {
+        console.error('Text input element with class "text-input" not found in the DOM.');
+        return;
+    }
+
+    // Dynamic size based on box dimensions
+    const copyrightWidth = box.params.length * 0.8; // 80% of box length for more width
+    const copyrightHeight = box.params.depth * 0.5; // 50% of box depth
+    box.params.copyrightSize = [copyrightWidth, copyrightHeight]; // Update stored size
 
     // Create canvas for the photo texture and text
     const canvas = document.createElement('canvas');
-    canvas.width = box.params.copyrightSize[0] * 10;
-    canvas.height = box.params.copyrightSize[1] * 10;
-    const planeGeometry = new THREE.PlaneGeometry(box.params.copyrightSize[0], box.params.copyrightSize[1]);
-
+    canvas.width = copyrightWidth * 20; // Higher multiplier for resolution
+    canvas.height = copyrightHeight * 20;
+    const planeGeometry = new THREE.PlaneGeometry(copyrightWidth, copyrightHeight);
     // Get canvas context
     const ctx = canvas.getContext('2d');
+    if (!ctx) {
+        console.error('Failed to get 2D context for canvas.');
+        return;
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Create texture and plane
@@ -318,16 +326,17 @@ function createCopyright() {
     }));
     scene.add(copyright);
 
-    // Function to update canvas with text
+    // Function to update canvas with text and scale font
     function updateCanvasText() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous content
-        ctx.fillStyle = '#000000'; // Text color
-        ctx.font = '50px Helvetica'; // Adjust font size and family as needed
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000000';
+        const fontSize = Math.min(copyrightHeight * 10, 50); // Scale font, cap at 50px
+        ctx.font = `${fontSize}px Helvetica`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const text = textInput.value || 'Your Text Here';
-        ctx.fillText(text, canvas.width / 2, canvas.height / 2); // Center the text
-        texture.needsUpdate = true; // Update the texture
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        texture.needsUpdate = true;
     }
 
     // Initial text render
@@ -345,77 +354,61 @@ function createCopyright() {
 
     // Event Listener for the Upload Button
     const uploadBtn = document.getElementById('upload-btn');
-    uploadBtn.addEventListener('click', () => {
-        uploadInput.click();
-    });
+    if (!uploadBtn) {
+        console.error('Upload button with ID "upload-btn" not found in the DOM.');
+    } else {
+        uploadBtn.addEventListener('click', () => {
+            uploadInput.click();
+        });
+    }
 
     // Handle Image Upload
     uploadInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // Draw image
-                    // Optionally, redraw text over the image
-                    ctx.fillStyle = '#000000'; // Text color
-                    ctx.font = '50px Helvetica';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    const text = textInput.value || 'Your Text Here';
-                    ctx.fillText(text, canvas.width / 2, canvas.height / 2); // Draw text over image
-                    texture.needsUpdate = true;
-                    createImageControls();
-
-                    // Center the copyright on the front face
-                    copyright.position.copy(box.els.frontHalf.length.side.position);
-                    copyright.position.x += box.params.length / 2;  // Center of length
-                    copyright.position.y = box.els.frontHalf.length.side.position.y;  // Center of depth
-                    copyright.position.z += box.params.thickness;  // Just above surface
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+        if (!file) {
+            console.warn('No file selected for upload.');
+            return;
         }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#000000';
+                const fontSize = Math.min(copyrightHeight * 10, 50);
+                ctx.font = `${fontSize}px Helvetica`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const text = textInput.value || 'Your Text Here';
+                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+                texture.needsUpdate = true;
+
+                // Position copyright on the front face with left offset
+                copyright.position.copy(box.els.frontHalf.length.side.position);
+                copyright.position.x += box.params.length / 2 - (box.params.copyrightSize[0] * 0.1); 
+                copyright.position.y = 0; // Center vertically
+                copyright.position.z += box.params.thickness + 0.1;
+                copyright.rotation.copy(box.els.frontHalf.length.side.rotation);
+            };
+            img.onerror = () => {
+                console.error('Failed to load image from file.');
+            };
+            img.src = e.target.result;
+        };
+        reader.onerror = () => {
+            console.error('Failed to read file.');
+        };
+        reader.readAsDataURL(file);
     });
 
-    // Initial positioning
+    // Initial positioning with left offset
     copyright.position.copy(box.els.frontHalf.length.side.position);
-    copyright.position.x += box.params.length / 2;
-    copyright.position.y = box.els.frontHalf.length.side.position.y;
-    copyright.position.z += box.params.thickness;
-}
-
-// Function to create resize, rotate, and delete controls (unchanged)
-function createImageControls() {
-    // Rotate Handle
-    rotateHandle = document.createElement('div');
-    rotateHandle.classList.add('rotate-handle');
-    document.body.appendChild(rotateHandle);
-
-    // Delete Button
-    deleteButton = document.createElement('button');
-    deleteButton.classList.add('delete-button');
-    deleteButton.innerHTML = 'X';
-    document.body.appendChild(deleteButton);
-
-    // Event Listeners for Controls
-    rotateHandle.addEventListener('mousedown', startRotate);
-    deleteButton.addEventListener('click', deleteImage);
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-}
-
-// Start rotating
-function startRotate(event) {
-    isRotating = true;
-    startX = event.clientX;
-    startY = event.clientY;
-    initialRotation = copyright.rotation.z;
-    document.body.style.cursor = 'grabbing';
+    copyright.position.x += box.params.length / 2 - (box.params.copyrightSize[0] * 0.1); 
+    copyright.position.y = 0; // Center vertically
+    copyright.position.z += box.params.thickness + 0.1;
+    copyright.rotation.copy(box.els.frontHalf.length.side.rotation);
 }
 
 // End of Clickable copyright
@@ -569,7 +562,7 @@ function updatePanelsTransform() {
 
     // Center copyright on front face
     copyright.position.copy(box.els.frontHalf.length.side.position);
-    copyright.position.x += box.params.length / 2;
+    copyright.position.x += box.params.length / 2 -10;
     copyright.position.y = 0; // Center vertically relative to box origin
     copyright.position.z += box.params.thickness + 0.1;
     copyright.rotation.copy(box.els.frontHalf.length.side.rotation);
@@ -577,7 +570,7 @@ function updatePanelsTransform() {
     // Update textMesh position (if still used)
     if (textMesh) {
         textMesh.position.copy(box.els.frontHalf.length.side.position);
-        textMesh.position.x += box.params.length / 2;
+        textMesh.position.x += box.params.length / 2 - 10;
         textMesh.position.y = 0;
         textMesh.position.z += box.params.thickness + 0.1;
         textMesh.rotation.copy(box.els.frontHalf.length.side.rotation);
@@ -597,14 +590,8 @@ function createZooming() {
     let zoomLevel = 1;
     const limits = [.4, 2];
 
-    zoomInBtn.addEventListener('click', () => {
-        zoomLevel *= 1.3;
-        applyZoomLimits();
-    });
-    zoomOutBtn.addEventListener('click', () => {
-        zoomLevel *= .75;
-        applyZoomLimits();
-    });
+    zoomInBtn.addEventListener('click', () => { zoomLevel *= 1.3; applyZoomLimits(); });
+    zoomOutBtn.addEventListener('click', () => { zoomLevel *= .75; applyZoomLimits(); });
 
     function applyZoomLimits() {
         if (zoomLevel > limits[1]) {
@@ -700,7 +687,6 @@ function createControls() {
 
 // Power start 😁
 // 3D Box Controller
-let selectedFace = null;
 function setupFaceViewControls() {
     const btnFront = document.querySelector('.b1');
     const btnLeft = document.querySelector('.b2');
@@ -741,7 +727,6 @@ let rotationRequest; // Store the animation frame request
 // Event Listener for Rotate Button
 document.getElementById('rotate-btn').addEventListener('click', () => {
     isRotating = !isRotating; // Toggle rotation state using '!'
-    
     if (isRotating) {
         animateRotation(); // Start rotation
     }
@@ -751,14 +736,11 @@ document.getElementById('rotate-btn').addEventListener('click', () => {
 function animateRotation() {
     if (!isRotating) return; // Stop rotation if the state is false
     if (box && box.els && box.els.group) {
-        // Rotate the box slightly to the right on the Y-axis
         box.els.group.rotation.y += 0.25 * 0.01;
     } else {
         console.warn('Box group not found in the scene.');
     }
-    // Update the scene
     orbit.update();
     renderer.render(scene, camera);
-    // Continuously animate while rotating is true
     rotationRequest = requestAnimationFrame(animateRotation);
 }
