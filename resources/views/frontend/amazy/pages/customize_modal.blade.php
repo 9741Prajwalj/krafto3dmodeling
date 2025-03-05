@@ -18,10 +18,8 @@
     </script>
     <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
     <script src='https://unpkg.co/gsap@3/dist/gsap.min.js'></script>
-    <script src='https://unpkg.co/gsap@3/dist/ScrollTrigger.min.js'></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.141.0/examples/js/controls/TransformControls.js"></script>
-    <script type="module" src="{{ asset('js/custom3d.js') }}"></script>
 </head>
 <body>
     <!-- Modal -->
@@ -52,11 +50,11 @@
                         <!-- Right Panel -->
                         <div class="customization-container">
                             <div class="button-group">
-                                <button class="btn upload" id="upload-btn">Upload</button>
-                                <button class="btn reset" id="reset-btn">Reset</button>
-                                <button class="btn rotate" id="rotate-btn">Rotate</button>
-                                <button class="btn close" id="close-box-btn">Open Box</button>
-                                <button class="btn open" id="open-box-btn">Close Box</button>
+                                <button class="btn1 upload" id="upload-btn">Upload</button>
+                                <button class="btn2 reset" id="reset-btn">Reset</button>
+                                <button class="btn3 rotate" id="rotate-btn">Rotate</button>
+                                <button class="btn4 closes" id="close-btn-box">Open Box</button>
+                                <button class="btn5 open" id="open-box-btn">Close Box</button>
                             </div>
                             
                             <div class="button-group">
@@ -71,7 +69,7 @@
                             <input type="text" class="text-input" placeholder="Add your text here">
                             
                             <div class="dropdown-group">
-                                <label for="fontStyle"><u>Add more text</u></label>
+                                <label for="fontStyle" id="addTextLink"><u>Add more text</u></label>
                                 <select id="fontStyle" class="dropdown">
                                     <option value="Decorative">Decorative</option>
                                 </select>
@@ -127,7 +125,7 @@
                             <div class="pricing">
                                 <span class="quantity">3000</span>
                                 <span class="price">₹12.44</span>
-                                <button class="btn add-to-cart">ADD TO CART</button>
+                                <button class="add-to-cart">ADD TO CART</button>
                             </div>
                         </div>
                     </div>
@@ -136,18 +134,16 @@
         </div>    
     </div>
 </body>
+<script type="module" src="{{ asset('js/custom3d.js') }}"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function () {
     const options = document.querySelectorAll(".option");
     const flexoRadio = document.getElementById("flexo");
     const inkSelector = document.querySelector(".ink-colour-selector");
 
     options.forEach(option => {
         option.addEventListener("click", function () {
-            // Remove 'selected' class from all options
             options.forEach(opt => opt.classList.remove("selected"));
-
-            // Add 'selected' class to the clicked option
             this.classList.add("selected");
         });
     });
@@ -161,7 +157,117 @@
     document.getElementById("offset").addEventListener("change", function () {
         inkSelector.style.display = "none";
     });
-});
 
+    function populateDropdowns() {
+        const fontStyleSelect = document.getElementById("fontStyle");
+        const fontSizeSelect = document.getElementById("fontSize");
+
+        if (!fontStyleSelect || !fontSizeSelect) {
+            console.error("Dropdown elements not found!");
+            return;
+        }
+
+        const fontStyles = [
+            { value: "Helvetica", text: "Helvetica" },
+            { value: "Arial", text: "Arial" },
+            { value: "Arial Black", text: "Arial Black" },
+            { value: "Agency FB", text: "Agency FB" },
+            { value: "Comic Sans MS", text: "Comic Sans MS" },
+            { value: "Courier", text: "Courier" },
+            { value: "Decorative", text: "Decorative" },
+            { value: "Georgia", text: "Georgia" },
+            { value: "Impact", text: "Impact" },
+            { value: "Monospace", text: "Monospace" },
+            { value: "Palatino", text: "Palatino" },
+            { value: "Sans Serif", text: "Sans Serif" },
+            { value: "Times New Roman", text: "Times New Roman" },
+            { value: "Trebuchet MS", text: "Trebuchet MS" },
+            { value: "Verdana", text: "Verdana" }
+        ];
+
+        fontStyleSelect.innerHTML = "";
+        fontSizeSelect.innerHTML = "";
+
+        fontStyles.forEach(font => {
+            const option = document.createElement("option");
+            option.value = font.value;
+            option.textContent = font.text;
+            if (font.value === "Georgia") {
+                option.selected = true;
+            }
+            fontStyleSelect.appendChild(option);
+        });
+
+        for (let size = 2; size <= 45; size++) {
+            const option = document.createElement("option");
+            option.value = `${size}px`;
+            option.textContent = `${size}px`;
+            if (size === 6) {
+                option.selected = true;
+            }
+            fontSizeSelect.appendChild(option);
+        }
+    }
+
+    function toggleAdditionalInputs() {
+        const addTextLink = document.getElementById("addTextLink");
+        const dropdownGroup = document.querySelector(".dropdown-group");
+        let additionalInputs = document.getElementById("additionalInputs");
+
+        if (!addTextLink || !dropdownGroup) {
+            console.error("Add text link or dropdown group not found!");
+            return;
+        }
+
+        // Define the toggle logic
+        const toggleInputs = function (e) {
+            e.preventDefault();
+
+            if (!additionalInputs) {
+                // Create the additionalInputs container if it doesn't exist
+                additionalInputs = document.createElement("div");
+                additionalInputs.id = "additionalInputs";
+
+                // Create exactly 3 input fields
+                for (let i = 0; i < 3; i++) {
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.className = "text-input";
+                    input.placeholder = "Add your text here";
+                    input.style.marginTop = "10px";
+                    additionalInputs.appendChild(input);
+                }
+
+                // Insert the additionalInputs div after the dropdown-group
+                dropdownGroup.insertAdjacentElement("afterend", additionalInputs);
+                addTextLink.textContent = "Remove text";
+            } else {
+                // Remove the additionalInputs div if it exists
+                additionalInputs.remove();
+                additionalInputs = null;
+                addTextLink.textContent = "Add more text";
+            }
+        };
+
+        // Add the event listener only once
+        addTextLink.addEventListener("click", toggleInputs);
+    }
+
+    const fontStyleSelect = document.getElementById("fontStyle");
+    const fontSizeSelect = document.getElementById("fontSize");
+
+    fontStyleSelect.addEventListener("change", function() {
+        console.log("Selected font style:", this.value);
+    });
+
+    fontSizeSelect.addEventListener("change", function() {
+        console.log("Selected font size:", this.value);
+    });
+
+    populateDropdowns();
+    toggleAdditionalInputs();
+
+    console.log("Script loaded and executed");
+});
 </script>
 </html>

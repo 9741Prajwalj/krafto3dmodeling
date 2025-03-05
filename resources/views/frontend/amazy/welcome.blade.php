@@ -2150,11 +2150,9 @@
                                         {{__('defaultTheme.login_to_order')}}
                                     </a>
                                 </div>
-
                                 @endif
                             </div>
                         </div>
-
                         @endforeach
                     </div>
                 </div>

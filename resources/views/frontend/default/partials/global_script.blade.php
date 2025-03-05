@@ -22,7 +22,6 @@
             data: formData,
             success: function (response) {
 
-
                 if(response.cart_details_submenu == 'out_of_stock'){
                     toastr.error('No more product to buy.');
                     $('#pre-loader').hide();
