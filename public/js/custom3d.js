@@ -14,12 +14,12 @@ let textMesh = null; // Variable to store the text mesh
 
 let box = {
     params: {
-        width: 27,
-        widthLimits: [15, 70],
+        breadth: 27,
+        breadthLimits: [15, 70],
         length: 80,
         lengthLimits: [40, 120],
-        depth: 45,
-        depthLimits: [15, 70],
+        height: 45,
+        heightLimits: [15, 70],
         thickness: .6,
         thicknessLimits: [.1, 1],
         fluteFreq: 5,
@@ -30,7 +30,7 @@ let box = {
     els: {
         group: new THREE.Group(),
         backHalf: {
-            width: {
+            breadth: {
                 top: new THREE.Mesh(),
                 side: new THREE.Mesh(),
                 bottom: new THREE.Mesh(),
@@ -42,7 +42,7 @@ let box = {
             },
         },
         frontHalf: {
-            width: {
+            breadth: {
                 top: new THREE.Mesh(),
                 side: new THREE.Mesh(),
                 bottom: new THREE.Mesh(),
@@ -58,7 +58,7 @@ let box = {
         openingAngle: .02 * Math.PI,
         flapAngles: {
             backHalf: {
-                width: {
+                breadth: {
                     top: 0,
                     bottom: 0
                 },
@@ -68,7 +68,7 @@ let box = {
                 },
             },
             frontHalf: {
-                width: {
+                breadth: {
                     top: 0,
                     bottom: 0
                 },
@@ -91,9 +91,7 @@ window.addEventListener('resize', updateSceneSize);
 
 // --------------------------------------------------
 // Three.js scene
-
 function initScene() {
-
     renderer = new THREE.WebGLRenderer({
         alpha: true,
         antialias: true,
@@ -102,7 +100,7 @@ function initScene() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(45, (container.clientWidth) / container.clientHeight, 10, 1000);    
+    camera = new THREE.PerspectiveCamera(45, (container.clientWidth) / container.clientHeight, 10, 1000);
     camera.position.set(40, 90, 110);
     rayCaster = new THREE.Raycaster();
     mouse = new THREE.Vector2(0, 0);
@@ -141,7 +139,6 @@ function initScene() {
     orbit.autoRotate = false;
     orbit.autoRotateSpeed = .25;
 
-    // initializeBoxScene();
     setupFaceViewControls();
     createCopyright();
     createBoxElements();
@@ -149,7 +146,6 @@ function initScene() {
     createZooming();
 
     render();
-    
 }
 
 function render() {
@@ -163,7 +159,6 @@ function render() {
 function updateSceneSize() {
     camera.aspect = (container.clientWidth) / container.clientHeight;
     camera.updateProjectionMatrix();
-
     renderer.setSize(container.clientWidth, container.clientHeight);
 }
 
@@ -174,10 +169,10 @@ function updateSceneSize() {
 // Box geometries
 
 function setGeometryHierarchy() {
-    box.els.group.add(box.els.frontHalf.width.side, box.els.frontHalf.length.side, box.els.backHalf.width.side, box.els.backHalf.length.side);
-    box.els.frontHalf.width.side.add(box.els.frontHalf.width.top, box.els.frontHalf.width.bottom);
+    box.els.group.add(box.els.frontHalf.breadth.side, box.els.frontHalf.length.side, box.els.backHalf.breadth.side, box.els.backHalf.length.side);
+    box.els.frontHalf.breadth.side.add(box.els.frontHalf.breadth.top, box.els.frontHalf.breadth.bottom);
     box.els.frontHalf.length.side.add(box.els.frontHalf.length.top, box.els.frontHalf.length.bottom);
-    box.els.backHalf.width.side.add(box.els.backHalf.width.top, box.els.backHalf.width.bottom);
+    box.els.backHalf.breadth.side.add(box.els.backHalf.breadth.top, box.els.backHalf.breadth.bottom);
     box.els.backHalf.length.side.add(box.els.backHalf.length.top, box.els.backHalf.length.bottom);
 }
 
@@ -186,40 +181,40 @@ function createBoxElements() {
         for (let sideIdx = 0; sideIdx < 2; sideIdx++) {
 
             const half = halfIdx ? 'frontHalf' : 'backHalf';
-            const side = sideIdx ? 'width' : 'length';
+            const side = sideIdx ? 'breadth' : 'length';
 
-            const sideWidth = side === 'width' ? box.params.width : box.params.length;
-            const flapWidth = sideWidth - 2 * box.params.flapGap;
-            const flapHeight = .5 * box.params.width - .75 * box.params.flapGap;
+            const sideBreadth = side === 'breadth' ? box.params.breadth : box.params.length;
+            const flapBreadth = sideBreadth - 2 * box.params.flapGap;
+            const flapHeight = .5 * box.params.breadth - .75 * box.params.flapGap;
 
             const sidePlaneGeometry = new THREE.PlaneGeometry(
-                sideWidth,
-                box.params.depth,
-                Math.floor(5 * sideWidth),
-                Math.floor(.2 * box.params.depth)
+                sideBreadth,
+                box.params.height,
+                Math.floor(5 * sideBreadth),
+                Math.floor(.2 * box.params.height)
             );
             const flapPlaneGeometry = new THREE.PlaneGeometry(
-                flapWidth,
+                flapBreadth,
                 flapHeight,
-                Math.floor(5 * flapWidth),
+                Math.floor(5 * flapBreadth),
                 Math.floor(.2 * flapHeight)
             );
 
             const sideGeometry = createSideGeometry(
                 sidePlaneGeometry,
-                [sideWidth, box.params.depth],
+                [sideBreadth, box.params.height],
                 [true, true, true, true],
                 false
             );
             const topGeometry = createSideGeometry(
                 flapPlaneGeometry,
-                [flapWidth, flapHeight],
+                [flapBreadth, flapHeight],
                 [false, false, true, false],
                 true
             );
             const bottomGeometry = createSideGeometry(
                 flapPlaneGeometry,
-                [flapWidth, flapHeight],
+                [flapBreadth, flapHeight],
                 [true, false, false, false],
                 true
             );
@@ -231,8 +226,8 @@ function createBoxElements() {
             box.els[half][side].side.geometry = sideGeometry;
             box.els[half][side].bottom.geometry = bottomGeometry;
 
-            box.els[half][side].top.position.y = .5 * box.params.depth;
-            box.els[half][side].bottom.position.y = -.5 * box.params.depth;
+            box.els[half][side].top.position.y = .5 * box.params.height;
+            box.els[half][side].bottom.position.y = -.5 * box.params.height;
         }
     }
 
@@ -258,7 +253,7 @@ function createSideGeometry(baseGeometry, size, folds, hasMiddleLayer) {
         const positionAttr = layerGeometry.attributes.position;
         for (let i = 0; i < positionAttr.count; i++) {
             const x = positionAttr.getX(i);
-            const y = positionAttr.getY(i)
+            const y = positionAttr.getY(i);
             let z = positionAttr.getZ(i) + offset(x);
             z = applyFolds(x, y, z);
             positionAttr.setXYZ(i, x, y, z);
@@ -295,24 +290,25 @@ function createCopyright() {
         console.error('Text input element with class "text-input" not found in the DOM.');
         return;
     }
-
-    // Dynamic size based on box dimensions
-    const copyrightWidth = box.params.length * 0.8; // 80% of box length for more width
-    const copyrightHeight = box.params.depth * 0.5; // 50% of box depth
-    box.params.copyrightSize = [copyrightWidth, copyrightHeight]; // Update stored size
+    // Dynamic size based on box dimensions, constrained to fit the front face
+    const maxBreadth = box.params.breadth; // Use breadth as the max width of the front face
+    const maxHeight = box.params.height;    // Use height as the max height of the front face
+    const copyrightBreadth = Math.min(box.params.length * 0.8, maxBreadth * 0.9); // 80% of length, capped at 90% of breadth
+    const copyrightHeight = Math.min(box.params.height * 0.5, maxHeight * 0.9);   // 50% of height, capped at 90% of height
+    box.params.copyrightSize = [copyrightBreadth, copyrightHeight]; // Update stored size
 
     // Create canvas for the photo texture and text
     const canvas = document.createElement('canvas');
-    canvas.width = copyrightWidth * 20; // Higher multiplier for resolution
+    canvas.breadth = copyrightBreadth * 20; // Higher multiplier for resolution
     canvas.height = copyrightHeight * 20;
-    const planeGeometry = new THREE.PlaneGeometry(copyrightWidth, copyrightHeight);
+    const planeGeometry = new THREE.PlaneGeometry(copyrightBreadth, copyrightHeight);
     // Get canvas context
     const ctx = canvas.getContext('2d');
     if (!ctx) {
         console.error('Failed to get 2D context for canvas.');
         return;
     }
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.breadth, canvas.height);
 
     // Create texture and plane
     const texture = new THREE.CanvasTexture(canvas);
@@ -325,14 +321,14 @@ function createCopyright() {
 
     // Function to update canvas with text and scale font
     function updateCanvasText() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.breadth, canvas.height);
         ctx.fillStyle = '#000000';
         const fontSize = Math.min(copyrightHeight * 10, 50); // Scale font, cap at 50px
         ctx.font = `${fontSize}px Helvetica`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const text = textInput.value || 'Your Text Here';
-        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        ctx.fillText(text, canvas.breadth / 2, canvas.height / 2);
         texture.needsUpdate = true;
     }
 
@@ -372,7 +368,18 @@ function createCopyright() {
             const img = new Image();
             img.onload = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                // Scale image to fit canvas while maintaining aspect ratio
+                const aspectRatio = img.width / img.height;
+                let drawWidth = canvas.width;
+                let drawHeight = canvas.height;
+                if (drawWidth / drawHeight > aspectRatio) {
+                    drawWidth = drawHeight * aspectRatio;
+                } else {
+                    drawHeight = drawWidth / aspectRatio;
+                }
+                const xOffset = (canvas.width - drawWidth) / 2;
+                const yOffset = (canvas.height - drawHeight) / 2;
+                ctx.drawImage(img, xOffset, yOffset, drawWidth, drawHeight);
                 ctx.fillStyle = '#000000';
                 const fontSize = Math.min(copyrightHeight * 10, 50);
                 ctx.font = `${fontSize}px Helvetica`;
@@ -383,29 +390,24 @@ function createCopyright() {
                 texture.needsUpdate = true;
 
                 // Position copyright on the front face with left offset
-                copyright.position.copy(box.els.frontHalf.length.side.position);
-                copyright.position.x += box.params.length / 2 - (box.params.copyrightSize[0] * 0.1); 
+                const frontLengthSide = box.els.frontHalf.length.side;
+                copyright.position.copy(frontLengthSide.position);
+                copyright.position.x += box.params.length / 2 - (copyright.geometry.parameters.width / 2); // Offset to center horizontally
                 copyright.position.y = 0; // Center vertically
-                copyright.position.z += box.params.thickness + 0.1;
-                copyright.rotation.copy(box.els.frontHalf.length.side.rotation);
-            };
-            img.onerror = () => {
-                console.error('Failed to load image from file.');
+                copyright.position.z = frontLengthSide.position.z + (box.params.thickness / 2) + 0.1; // Slightly in front of the front face
+                copyright.rotation.copy(frontLengthSide.rotation);
             };
             img.src = e.target.result;
-        };
-        reader.onerror = () => {
-            console.error('Failed to read file.');
         };
         reader.readAsDataURL(file);
     });
 
-    // Initial positioning with left offset
-    copyright.position.copy(box.els.frontHalf.length.side.position);
-    copyright.position.x += box.params.length / 2 - (box.params.copyrightSize[0] * 0.1); 
+    const frontLengthSide = box.els.frontHalf.length.side;
+    copyright.position.copy(frontLengthSide.position);
+    copyright.position.x += box.params.length / 2 - (copyright.geometry.parameters.width / 2); // Offset to center horizontally
     copyright.position.y = 0; // Center vertically
-    copyright.position.z += box.params.thickness + 0.1;
-    copyright.rotation.copy(box.els.frontHalf.length.side.rotation);
+    copyright.position.z = frontLengthSide.position.z + (box.params.thickness / 2) + 0.1; // Slightly in front of the front face
+    copyright.rotation.copy(frontLengthSide.rotation);
 }
 
 // End of Clickable copyright
@@ -417,16 +419,17 @@ function createCopyright() {
 function createFoldingAnimation() {
     // Initial state: box starts closed
     box.animated.openingAngle = 0; // Fully closed
-    box.animated.flapAngles.backHalf.width.top = 0;
-    box.animated.flapAngles.backHalf.width.bottom = 0;
+    box.animated.flapAngles.backHalf.breadth.top = 0;
+    box.animated.flapAngles.backHalf.breadth.bottom = 0;
     box.animated.flapAngles.backHalf.length.top = 0;
     box.animated.flapAngles.backHalf.length.bottom = 0;
-    box.animated.flapAngles.frontHalf.width.top = 0;
-    box.animated.flapAngles.frontHalf.width.bottom = 0;
+    box.animated.flapAngles.frontHalf.breadth.top = 0;
+    box.animated.flapAngles.frontHalf.breadth.bottom = 0;
     box.animated.flapAngles.frontHalf.length.top = 0;
     box.animated.flapAngles.frontHalf.length.bottom = 0;
     // Update the initial state
     updatePanelsTransform();
+
     // Timeline for closing the box (from open to closed)
     const closeTimeline = gsap.timeline({
         paused: true, // Start paused, triggered manually
@@ -449,7 +452,7 @@ function createFoldingAnimation() {
             bottom: 0,
             ease: 'back.out(3)'
         }, "-=0.7")
-        .to([box.animated.flapAngles.backHalf.width, box.animated.flapAngles.frontHalf.width], {
+        .to([box.animated.flapAngles.backHalf.breadth, box.animated.flapAngles.frontHalf.breadth], {
             duration: 0.6,
             top: 0,
             bottom: 0,
@@ -476,7 +479,7 @@ function createFoldingAnimation() {
             openingAngle: 0.5 * Math.PI, // Fully open
             ease: 'power1.inOut'
         })
-        .to([box.animated.flapAngles.backHalf.width, box.animated.flapAngles.frontHalf.width], {
+        .to([box.animated.flapAngles.backHalf.breadth, box.animated.flapAngles.frontHalf.breadth], {
             duration: 0.6,
             bottom: 0.6 * Math.PI,
             ease: 'back.in(3)'
@@ -491,7 +494,7 @@ function createFoldingAnimation() {
             bottom: 0.49 * Math.PI,
             ease: 'back.in(3)'
         }, "-=0.6")
-        .to([box.animated.flapAngles.backHalf.width, box.animated.flapAngles.frontHalf.width], {
+        .to([box.animated.flapAngles.backHalf.breadth, box.animated.flapAngles.frontHalf.breadth], {
             duration: 0.6,
             top: 0.6 * Math.PI,
             ease: 'back.in(3)'
@@ -528,41 +531,42 @@ function createFoldingAnimation() {
 
 // No changes needed to updatePanelsTransform unless you want to tweak positioning further
 function updatePanelsTransform() {
-    // Place width-sides aside of length-sides
-    box.els.frontHalf.width.side.position.x = 0.5 * box.params.length;
-    box.els.backHalf.width.side.position.x = -0.5 * box.params.length;
+    // Place breadth-sides aside of length-sides
+    box.els.frontHalf.breadth.side.position.x = 0.5 * box.params.length;
+    box.els.backHalf.breadth.side.position.x = -0.5 * box.params.length;
 
-    // Rotate width-sides from 0 to 90 deg
-    box.els.frontHalf.width.side.rotation.y = box.animated.openingAngle;
-    box.els.backHalf.width.side.rotation.y = box.animated.openingAngle;
+    // Rotate breadth-sides from 0 to 90 deg
+    box.els.frontHalf.breadth.side.rotation.y = box.animated.openingAngle;
+    box.els.backHalf.breadth.side.rotation.y = box.animated.openingAngle;
 
     // Move length-sides to keep the box centered
     const cos = Math.cos(box.animated.openingAngle);
-    box.els.frontHalf.length.side.position.x = -0.5 * cos * box.params.width;
-    box.els.backHalf.length.side.position.x = 0.5 * cos * box.params.width;
+    box.els.frontHalf.length.side.position.x = -0.5 * cos * box.params.breadth;
+    box.els.backHalf.length.side.position.x = 0.5 * cos * box.params.breadth;
 
     // Move length-sides to define box inner space
     const sin = Math.sin(box.animated.openingAngle);
-    box.els.frontHalf.length.side.position.z = 0.5 * sin * box.params.width;
-    box.els.backHalf.length.side.position.z = -0.5 * sin * box.params.width;
+    box.els.frontHalf.length.side.position.z = 0.5 * sin * box.params.breadth;
+    box.els.backHalf.length.side.position.z = -0.5 * sin * box.params.breadth;
 
     // Rotate flaps
-    box.els.frontHalf.width.top.rotation.x = -box.animated.flapAngles.frontHalf.width.top;
+    box.els.frontHalf.breadth.top.rotation.x = -box.animated.flapAngles.frontHalf.breadth.top;
     box.els.frontHalf.length.top.rotation.x = -box.animated.flapAngles.frontHalf.length.top;
-    box.els.frontHalf.width.bottom.rotation.x = box.animated.flapAngles.frontHalf.width.bottom;
+    box.els.frontHalf.breadth.bottom.rotation.x = box.animated.flapAngles.frontHalf.breadth.bottom;
     box.els.frontHalf.length.bottom.rotation.x = box.animated.flapAngles.frontHalf.length.bottom;
 
-    box.els.backHalf.width.top.rotation.x = box.animated.flapAngles.backHalf.width.top;
+    box.els.backHalf.breadth.top.rotation.x = box.animated.flapAngles.backHalf.breadth.top;
     box.els.backHalf.length.top.rotation.x = box.animated.flapAngles.backHalf.length.top;
-    box.els.backHalf.width.bottom.rotation.x = -box.animated.flapAngles.backHalf.width.bottom;
+    box.els.backHalf.breadth.bottom.rotation.x = -box.animated.flapAngles.backHalf.breadth.bottom;
     box.els.backHalf.length.bottom.rotation.x = -box.animated.flapAngles.backHalf.length.bottom;
 
-    // Center copyright on front face
-    copyright.position.copy(box.els.frontHalf.length.side.position);
-    copyright.position.x += box.params.length / 2 -10;
-    copyright.position.y = 0; // Center vertically relative to box origin
-    copyright.position.z += box.params.thickness + 0.1;
-    copyright.rotation.copy(box.els.frontHalf.length.side.rotation);
+    const frontLengthSide = box.els.frontHalf.length.side;
+    copyright.position.copy(frontLengthSide.position);
+    // Center the copyright on the front face
+    copyright.position.x += box.params.length / 2 - (copyright.geometry.parameters.width / 2); // Offset to center horizontally
+    copyright.position.y = 0; // Center vertically
+    copyright.position.z = frontLengthSide.position.z + (box.params.thickness / 2) + 0.1; // Slightly in front of the front face
+    copyright.rotation.copy(frontLengthSide.rotation);
 
     // Update textMesh position (if still used)
     if (textMesh) {
@@ -650,7 +654,7 @@ function createControls() {
     window.addEventListener("resize", updateGUIStyles);
 
     // Add GUI controls
-    gui.add(box.params, 'width', box.params.widthLimits[0], box.params.widthLimits[1])
+    gui.add(box.params, 'breadth', box.params.breadthLimits[0], box.params.breadthLimits[1])
         .step(1).onChange(() => {
             createBoxElements();
             updatePanelsTransform();
@@ -662,7 +666,7 @@ function createControls() {
             updatePanelsTransform();
         });
 
-    gui.add(box.params, 'depth', box.params.depthLimits[0], box.params.depthLimits[1])
+    gui.add(box.params, 'height', box.params.heightLimits[0], box.params.heightLimits[1])
         .step(1).onChange(() => {
             createBoxElements();
             updatePanelsTransform();
