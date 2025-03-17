@@ -198,7 +198,6 @@ class LoginController extends Controller
         return $fieldType;
     }
 
-
     public function login(Request $request)
     {
         $user = null;

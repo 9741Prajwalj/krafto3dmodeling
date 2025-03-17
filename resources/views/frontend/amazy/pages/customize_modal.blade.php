@@ -51,8 +51,8 @@
                         <div class="customization-container">
                             <div class="button-group">
                                 <button class="btn1 upload" id="upload-btn">Upload</button>
-                                <button class="btn2 reset" id="reset-btn">Reset</button>
-                                <button class="btn3 rotate" id="rotate-btn">Rotate</button>
+                                <!-- <button class="btn2 reset" id="reset-btn">Reset</button>
+                                <button class="btn3 rotate" id="rotate-btn">Rotate</button> -->
                                 <button class="btn4 closes" id="close-btn-box">Open Box</button>
                                 <button class="btn5 open" id="open-box-btn">Close Box</button>
                             </div>

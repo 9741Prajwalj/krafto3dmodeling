@@ -76,13 +76,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/checkout/coupon-apply', [CheckoutController::class, 'couponApply']);
 
     //order
-
-
     Route::get('/order-pending-list', [OrderController::class, 'PendingOrderList']);
     Route::get('/order-cancel-list', [OrderController::class, 'cancelOrderList']);
     Route::post('/order-store', [OrderController::class, 'orderStore']);
-
-
     Route::post('/order-payment-info-store', [OrderController::class, 'paymentInfoStore']);
 
     Route::get('/order-to-ship', [OrderController::class, 'orderToShip']);

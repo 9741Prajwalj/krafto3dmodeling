@@ -228,6 +228,7 @@ a:focus-visible {
 
 .modal-panel-left {
 	border-right: 1px solid #ccc;
+	position: relative;
 }
 
 .customization-container {

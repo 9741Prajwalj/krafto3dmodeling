@@ -291,24 +291,23 @@ function createCopyright() {
         return;
     }
     // Dynamic size based on box dimensions, constrained to fit the front face
-    const maxBreadth = box.params.breadth; // Use breadth as the max width of the front face
-    const maxHeight = box.params.height;    // Use height as the max height of the front face
-    const copyrightBreadth = Math.min(box.params.length * 0.8, maxBreadth * 0.9); // 80% of length, capped at 90% of breadth
-    const copyrightHeight = Math.min(box.params.height * 0.5, maxHeight * 0.9);   // 50% of height, capped at 90% of height
-    box.params.copyrightSize = [copyrightBreadth, copyrightHeight]; // Update stored size
+    const maxBreadth = box.params.breadth;
+    const maxHeight = box.params.height;
+    const copyrightBreadth = Math.min(box.params.breadth * 0.8, maxBreadth * 0.9); // Use breadth for front face
+    const copyrightHeight = Math.min(box.params.height * 0.5, maxHeight * 0.9);
+    box.params.copyrightSize = [copyrightBreadth, copyrightHeight];
 
     // Create canvas for the photo texture and text
     const canvas = document.createElement('canvas');
-    canvas.breadth = copyrightBreadth * 20; // Higher multiplier for resolution
+    canvas.width = copyrightBreadth * 20;
     canvas.height = copyrightHeight * 20;
     const planeGeometry = new THREE.PlaneGeometry(copyrightBreadth, copyrightHeight);
-    // Get canvas context
     const ctx = canvas.getContext('2d');
     if (!ctx) {
         console.error('Failed to get 2D context for canvas.');
         return;
     }
-    ctx.clearRect(0, 0, canvas.breadth, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Create texture and plane
     const texture = new THREE.CanvasTexture(canvas);
@@ -321,14 +320,14 @@ function createCopyright() {
 
     // Function to update canvas with text and scale font
     function updateCanvasText() {
-        ctx.clearRect(0, 0, canvas.breadth, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#000000';
-        const fontSize = Math.min(copyrightHeight * 10, 50); // Scale font, cap at 50px
+        const fontSize = Math.min(copyrightHeight * 20, 50); // Adjusted for better scaling
         ctx.font = `${fontSize}px Helvetica`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const text = textInput.value || 'Your Text Here';
-        ctx.fillText(text, canvas.breadth / 2, canvas.height / 2);
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
         texture.needsUpdate = true;
     }
 
@@ -368,7 +367,6 @@ function createCopyright() {
             const img = new Image();
             img.onload = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                // Scale image to fit canvas while maintaining aspect ratio
                 const aspectRatio = img.width / img.height;
                 let drawWidth = canvas.width;
                 let drawHeight = canvas.height;
@@ -381,32 +379,24 @@ function createCopyright() {
                 const yOffset = (canvas.height - drawHeight) / 2;
                 ctx.drawImage(img, xOffset, yOffset, drawWidth, drawHeight);
                 ctx.fillStyle = '#000000';
-                const fontSize = Math.min(copyrightHeight * 10, 50);
+                const fontSize = Math.min(copyrightHeight * 20, 50);
                 ctx.font = `${fontSize}px Helvetica`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 const text = textInput.value || 'Your Text Here';
                 ctx.fillText(text, canvas.width / 2, canvas.height / 2);
                 texture.needsUpdate = true;
-
-                // Position copyright on the front face with left offset
-                const frontLengthSide = box.els.frontHalf.length.side;
-                copyright.position.copy(frontLengthSide.position);
-                copyright.position.x += box.params.length / 2 - (copyright.geometry.parameters.width / 2); // Offset to center horizontally
-                copyright.position.y = 0; // Center vertically
-                copyright.position.z = frontLengthSide.position.z + (box.params.thickness / 2) + 0.1; // Slightly in front of the front face
-                copyright.rotation.copy(frontLengthSide.rotation);
             };
             img.src = e.target.result;
         };
         reader.readAsDataURL(file);
     });
-
+    // Initial positioning
     const frontLengthSide = box.els.frontHalf.length.side;
     copyright.position.copy(frontLengthSide.position);
-    copyright.position.x += box.params.length / 2 - (copyright.geometry.parameters.width / 2); // Offset to center horizontally
-    copyright.position.y = 0; // Center vertically
-    copyright.position.z = frontLengthSide.position.z + (box.params.thickness / 2) + 0.1; // Slightly in front of the front face
+    copyright.position.x += box.params.breadth / 2 - (copyright.geometry.parameters.width / 2);
+    copyright.position.y = 0;
+    copyright.position.z = frontLengthSide.position.z + (box.params.thickness / 2);
     copyright.rotation.copy(frontLengthSide.rotation);
 }
 
@@ -622,7 +612,7 @@ function createZooming() {
 // Range sliders for box parameters
 function createControls() {
     const gui = new GUI();
-    const modalBody = document.querySelector('.content11');
+    const modalBody = document.querySelector('.modal-panel-left');
 
     if (modalBody) {
         modalBody.appendChild(gui.domElement); // Append GUI inside content11
@@ -634,7 +624,7 @@ function createControls() {
 
         gui.domElement.style.position = 'absolute';
         gui.domElement.style.top = '15px';
-        gui.domElement.style.right = '8px';
+        gui.domElement.style.left = '8px';
         gui.domElement.style.zIndex = '1000'; // Ensure it appears above other elements
         gui.domElement.style.width = screenWidth < 768 ? '80%' : '250px'; // Responsive width
 
@@ -719,30 +709,58 @@ function setupFaceViewControls() {
     btnRight.addEventListener('click', () => {selectedFace = 'right'; moveCamera({ x: distance, y: 0, z: 0 }, box.position);});
     btnTop.addEventListener('click', () => {selectedFace = 'top'; moveCamera({ x: 0, y: distance, z: 0 }, box.position);});
     btnBottom.addEventListener('click', () => {selectedFace = 'bottom'; moveCamera({ x: 0, y: -distance, z: 0 }, box.position);});
-
 }
 
 // For Rotate button
-let isRotating = false;
-let rotationRequest; // Store the animation frame request
+// let isRotating = false;
+// let rotationRequest; // Store the animation frame request
 
 // Event Listener for Rotate Button
-document.getElementById('rotate-btn').addEventListener('click', () => {
-    isRotating = !isRotating; // Toggle rotation state using '!'
-    if (isRotating) {
-        animateRotation(); // Start rotation
-    }
-});
+// document.getElementById('rotate-btn').addEventListener('click', () => {
+//     isRotating = !isRotating; // Toggle rotation state
+//     if (isRotating) {
+//         animateRotation(); // Start rotation
+//     } else {
+//         cancelAnimationFrame(rotationRequest); // Stop rotation when toggled off
+//     }
+// });
 
 // Function to Animate Rotation of the 3D Box
-function animateRotation() {
-    if (!isRotating) return; // Stop rotation if the state is false
-    if (box && box.els && box.els.group) {
-        box.els.group.rotation.y += 0.25 * 0.01;
-    } else {
-        console.warn('Box group not found in the scene.');
-    }
-    orbit.update();
-    renderer.render(scene, camera);
-    rotationRequest = requestAnimationFrame(animateRotation);
-}
+// function animateRotation() {
+//     if (!isRotating) return; // Stop rotation if the state is false
+//     if (box && box.els && box.els.group) {
+//         box.els.group.rotation.y += 0.25 * 0.01;
+//         copyright.rotation.y = box.els.group.rotation.y;
+//     } else {
+//         console.warn('Box group not found in the scene.');
+//     }
+//     orbit.update();
+//     renderer.render(scene, camera);
+//     rotationRequest = requestAnimationFrame(animateRotation);
+// }
+
+// Event Listener for Reset Button
+// document.getElementById('reset-btn').addEventListener('click', () => {
+//     console.log("Reset button is pressed");
+//     if (ctx) {
+//         ctx.clearRect(0, 0, canvas.width, canvas.height);
+//         const textInput = document.querySelector('.text-input');
+//         if (textInput) {
+//             textInput.value = '';
+//         }
+//         copyright.material.map = new THREE.CanvasTexture(canvas); // Recreate texture
+//         updateCanvasText();
+//         updateCopyrightPosition();
+//     } else {
+//         console.error('Canvas context is not available.');
+//     }
+// });
+// // Helper function to update copyright position
+// function updateCopyrightPosition() {
+//     const frontLengthSide = box.els.frontHalf.length.side;
+//     copyright.position.copy(frontLengthSide.position);
+//     copyright.position.x += box.params.breadth / 2 - (copyright.geometry.parameters.width / 2);
+//     copyright.position.y = 0;
+//     copyright.position.z = frontLengthSide.position.z + (box.params.thickness / 2); // No extra offset
+//     copyright.rotation.copy(frontLengthSide.rotation);
+// }

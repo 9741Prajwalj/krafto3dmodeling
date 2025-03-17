@@ -190,7 +190,7 @@
                                         </div>
                                     </div>
                                     <p>{{$review->review}}</p>
-
+                                                                                                                                   n m
                                     @if($review->images->count())
                                         <div class="review_file mt-3">
                                             @php
