@@ -26,6 +26,7 @@ const mix = require('laravel-mix');
 // });
 
 mix.js([
+    'resources/js/custom3d.js', 'public/js',
     'resources/js/frontend/amazy/app.js',
     'public/backend/js/loadah.min.js',
     'public/frontend/amazy/js/owl.carousel.min.js',

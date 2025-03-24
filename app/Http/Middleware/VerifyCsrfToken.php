@@ -21,6 +21,7 @@ class VerifyCsrfToken extends Middleware
         '/midtrans-payment-failed',
         'install', 'install/*','search',
         'google/refresh-token',
+        '/api/save-box-configuration',
 
 //        Start SslComerze
           '/ssl-commerz/success','/ssl-commerz/cancel','/ssl-commerz/fail','/ssl-commerz/ipn',

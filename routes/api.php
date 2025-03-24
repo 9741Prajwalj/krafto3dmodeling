@@ -17,6 +17,7 @@ use App\Http\Controllers\API\PaymentMethodController;
 use App\Http\Controllers\API\SupportTicketController;
 use App\Http\Controllers\API\PushNotificationController;
 use Modules\Product\Http\Controllers\API\CategoryController;
+use App\Http\Controllers\BoxConfigurationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -172,3 +173,5 @@ Route::prefix('version2')->group(function () {
 });
 
 Route::get('marketing/new-user-zones', [NewUserZoneController::class, 'getAll']);
+
+Route::post('/save-box-configuration', [BoxConfigurationController::class, 'save']);

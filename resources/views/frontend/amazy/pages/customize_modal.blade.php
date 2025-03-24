@@ -3,23 +3,30 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <!-- CSRF token for Laravel (ensure this is rendered correctly by your backend) -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Modal Page</title>
-    <!-- <link rel="stylesheet"  type="text/css" href="{{ asset(path: 'css/threed.css') }}"> -->
+    <!-- Use url() or asset() consistently; assuming Laravel, ensure paths are correct -->
     <link rel="stylesheet" type="text/css" href="{{ url('css/threed.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- ES Module Shims for module imports -->
     <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
     <script type="importmap">
         {
             "imports": {
                 "three": "https://unpkg.com/three@0.138.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.138.0/examples/jsm/"
+                "three/addons/": "https://unpkg.com/three@0.138.0/examples/jsm/",
+                "three/addons/controls/TransformControls.js": "https://unpkg.com/three@0.138.0/examples/jsm/controls/TransformControls.js"
             }
         }
     </script>
-    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
-    <script src='https://unpkg.co/gsap@3/dist/gsap.min.js'></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.141.0/examples/js/controls/TransformControls.js"></script>
+    
+    <script type="module" src="{{ url('js/custom3d.js') }}"></script>
+    <!-- External scripts -->
+    <script src="{{ url('js/bootstrap.bundle.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://unpkg.co/gsap@3/dist/gsap.min.js"></script>
 </head>
 <body>
     <!-- Modal -->
@@ -51,10 +58,8 @@
                         <div class="customization-container">
                             <div class="button-group">
                                 <button class="btn1 upload" id="upload-btn">Upload</button>
-                                <!-- <button class="btn2 reset" id="reset-btn">Reset</button>
-                                <button class="btn3 rotate" id="rotate-btn">Rotate</button> -->
-                                <button class="btn4 closes" id="close-btn-box">Open Box</button>
-                                <button class="btn5 open" id="open-box-btn">Close Box</button>
+                                <button class="btn4 closes" id="close-btn-box">Close Box</button> <!-- Swapped labels for clarity -->
+                                <button class="btn5 open" id="open-box-btn">Open Box</button>
                             </div>
                             
                             <div class="button-group">
@@ -71,10 +76,10 @@
                             <div class="dropdown-group">
                                 <label for="fontStyle" id="addTextLink"><u>Add more text</u></label>
                                 <select id="fontStyle" class="dropdown">
-                                    <option value="Decorative">Decorative</option>
+                                    <!-- Options populated by JS -->
                                 </select>
                                 <select id="fontSize" class="dropdown">
-                                    <option value="20px">20px</option>
+                                    <!-- Options populated by JS -->
                                 </select>
                             </div>
                             
@@ -119,7 +124,7 @@
                             </div>
 
                             <div class="image-preview">
-                                <img src="{{ asset('images/flexo_image.png') }}" alt="Flexo Printing" width="550px" height="180px">
+                                <img src="{{ url('images/flexo_image.png') }}" alt="Flexo Printing" width="550" height="180">
                             </div>
                             
                             <div class="pricing">
@@ -133,141 +138,150 @@
             </div>
         </div>    
     </div>
-</body>
-<script type="module" src="{{ asset('js/custom3d.js') }}"></script>
+
+    <!-- Scripts -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const options = document.querySelectorAll(".option");
-    const flexoRadio = document.getElementById("flexo");
-    const inkSelector = document.querySelector(".ink-colour-selector");
+    document.addEventListener("DOMContentLoaded", function () {
+        const options = document.querySelectorAll(".option");
+        const flexoRadio = document.getElementById("flexo");
+        const inkSelector = document.querySelector(".ink-colour-selector");
 
-    options.forEach(option => {
-        option.addEventListener("click", function () {
-            options.forEach(opt => opt.classList.remove("selected"));
-            this.classList.add("selected");
+        options.forEach(option => {
+            option.addEventListener("click", function () {
+                options.forEach(opt => opt.classList.remove("selected"));
+                this.classList.add("selected");
+            });
         });
-    });
 
-    flexoRadio.addEventListener("change", function () {
-        if (flexoRadio.checked) {
-            inkSelector.style.display = "block";
+        flexoRadio.addEventListener("change", function () {
+            if (flexoRadio.checked) inkSelector.style.display = "block";
+        });
+
+        document.getElementById("offset").addEventListener("change", function () {
+            inkSelector.style.display = "none";
+        });
+
+        function populateDropdowns() {
+            const fontStyleSelect = document.getElementById("fontStyle");
+            const fontSizeSelect = document.getElementById("fontSize");
+
+            if (!fontStyleSelect || !fontSizeSelect) {
+                console.error("Dropdown elements not found!");
+                return;
+            }
+
+            const fontStyles = [
+                { value: "Helvetica", text: "Helvetica" },
+                { value: "Arial", text: "Arial" },
+                { value: "Arial Black", text: "Arial Black" },
+                { value: "Agency FB", text: "Agency FB" },
+                { value: "Comic Sans MS", text: "Comic Sans MS" },
+                { value: "Courier", text: "Courier" },
+                { value: "Decorative", text: "Decorative" },
+                { value: "Georgia", text: "Georgia" },
+                { value: "Impact", text: "Impact" },
+                { value: "Monospace", text: "Monospace" },
+                { value: "Palatino", text: "Palatino" },
+                { value: "Sans Serif", text: "Sans Serif" },
+                { value: "Times New Roman", text: "Times New Roman" },
+                { value: "Trebuchet MS", text: "Trebuchet MS" },
+                { value: "Verdana", text: "Verdana" }
+            ];
+
+            fontStyleSelect.innerHTML = "";
+            fontSizeSelect.innerHTML = "";
+
+            fontStyles.forEach(font => {
+                const option = document.createElement("option");
+                option.value = font.value;
+                option.textContent = font.text;
+                if (font.value === "Georgia") option.selected = true;
+                fontStyleSelect.appendChild(option);
+            });
+
+            for (let size = 2; size <= 50; size++) {
+                const option = document.createElement("option");
+                option.value = `${size}px`;
+                option.textContent = `${size}px`;
+                if (size === 6) option.selected = true;
+                fontSizeSelect.appendChild(option);
+            }
         }
-    });
 
-    document.getElementById("offset").addEventListener("change", function () {
-        inkSelector.style.display = "none";
-    });
+        function toggleAdditionalInputs() {
+            const addTextLink = document.getElementById("addTextLink");
+            const dropdownGroup = document.querySelector(".dropdown-group");
+            let additionalInputs = document.getElementById("additionalInputs");
 
-    function populateDropdowns() {
+            if (!addTextLink || !dropdownGroup) {
+                console.error("Add text link or dropdown group not found!");
+                return;
+            }
+
+            const toggleInputs = function (e) {
+                e.preventDefault();
+                if (!additionalInputs) {
+                    additionalInputs = document.createElement("div");
+                    additionalInputs.id = "additionalInputs";
+                    for (let i = 0; i < 3; i++) {
+                        const input = document.createElement("input");
+                        input.type = "text";
+                        input.className = "text-input additional-text-input"; // Add class for styling or targeting
+                        input.placeholder = "Add your text here";
+                        input.style.marginTop = "10px";
+                        additionalInputs.appendChild(input);
+                    }
+                    dropdownGroup.insertAdjacentElement("afterend", additionalInputs);
+                    addTextLink.textContent = "Remove text";
+                } else {
+                    additionalInputs.remove();
+                    additionalInputs = null;
+                    addTextLink.textContent = "Add more text";
+                }
+            };
+
+            addTextLink.addEventListener("click", toggleInputs);
+        }
+
         const fontStyleSelect = document.getElementById("fontStyle");
         const fontSizeSelect = document.getElementById("fontSize");
 
-        if (!fontStyleSelect || !fontSizeSelect) {
-            console.error("Dropdown elements not found!");
-            return;
+        // Function to update the 3D box text
+        function updateBoxText() {
+            const fontStyle = fontStyleSelect.value;
+            const fontSize = parseInt(fontSizeSelect.value); // Remove 'px' and get numeric value
+            const text = document.querySelector('.text-input').value || 'Your Text Here';
+
+            // Call a function in custom3d.js to update the copyright text
+            if (typeof window.updateCopyrightText === 'function') {
+                window.updateCopyrightText(text, fontStyle, fontSize);
+            }
         }
 
-        const fontStyles = [
-            { value: "Helvetica", text: "Helvetica" },
-            { value: "Arial", text: "Arial" },
-            { value: "Arial Black", text: "Arial Black" },
-            { value: "Agency FB", text: "Agency FB" },
-            { value: "Comic Sans MS", text: "Comic Sans MS" },
-            { value: "Courier", text: "Courier" },
-            { value: "Decorative", text: "Decorative" },
-            { value: "Georgia", text: "Georgia" },
-            { value: "Impact", text: "Impact" },
-            { value: "Monospace", text: "Monospace" },
-            { value: "Palatino", text: "Palatino" },
-            { value: "Sans Serif", text: "Sans Serif" },
-            { value: "Times New Roman", text: "Times New Roman" },
-            { value: "Trebuchet MS", text: "Trebuchet MS" },
-            { value: "Verdana", text: "Verdana" }
-        ];
-
-        fontStyleSelect.innerHTML = "";
-        fontSizeSelect.innerHTML = "";
-
-        fontStyles.forEach(font => {
-            const option = document.createElement("option");
-            option.value = font.value;
-            option.textContent = font.text;
-            if (font.value === "Georgia") {
-                option.selected = true;
-            }
-            fontStyleSelect.appendChild(option);
+        // Update text when font style changes
+        fontStyleSelect.addEventListener("change", function() {
+            console.log("Selected font style:", this.value);
+            updateBoxText();
         });
 
-        for (let size = 2; size <= 45; size++) {
-            const option = document.createElement("option");
-            option.value = `${size}px`;
-            option.textContent = `${size}px`;
-            if (size === 6) {
-                option.selected = true;
-            }
-            fontSizeSelect.appendChild(option);
-        }
-    }
+        // Update text when font size changes
+        fontSizeSelect.addEventListener("change", function() {
+            console.log("Selected font size:", this.value);
+            updateBoxText();
+        });
 
-    function toggleAdditionalInputs() {
-        const addTextLink = document.getElementById("addTextLink");
-        const dropdownGroup = document.querySelector(".dropdown-group");
-        let additionalInputs = document.getElementById("additionalInputs");
+        // Update text when text input changes
+        document.querySelector('.text-input').addEventListener('input', updateBoxText);
 
-        if (!addTextLink || !dropdownGroup) {
-            console.error("Add text link or dropdown group not found!");
-            return;
-        }
+        populateDropdowns();
+        toggleAdditionalInputs();
 
-        // Define the toggle logic
-        const toggleInputs = function (e) {
-            e.preventDefault();
+        // Show modal on page load (for testing; remove if not desired)
+        const modal = new bootstrap.Modal(document.getElementById('customizeModal'));
+        modal.show();
 
-            if (!additionalInputs) {
-                // Create the additionalInputs container if it doesn't exist
-                additionalInputs = document.createElement("div");
-                additionalInputs.id = "additionalInputs";
-
-                // Create exactly 3 input fields
-                for (let i = 0; i < 3; i++) {
-                    const input = document.createElement("input");
-                    input.type = "text";
-                    input.className = "text-input";
-                    input.placeholder = "Add your text here";
-                    input.style.marginTop = "10px";
-                    additionalInputs.appendChild(input);
-                }
-
-                // Insert the additionalInputs div after the dropdown-group
-                dropdownGroup.insertAdjacentElement("afterend", additionalInputs);
-                addTextLink.textContent = "Remove text";
-            } else {
-                // Remove the additionalInputs div if it exists
-                additionalInputs.remove();
-                additionalInputs = null;
-                addTextLink.textContent = "Add more text";
-            }
-        };
-
-        // Add the event listener only once
-        addTextLink.addEventListener("click", toggleInputs);
-    }
-
-    const fontStyleSelect = document.getElementById("fontStyle");
-    const fontSizeSelect = document.getElementById("fontSize");
-
-    fontStyleSelect.addEventListener("change", function() {
-        console.log("Selected font style:", this.value);
+        console.log("Script loaded and executed");
     });
-
-    fontSizeSelect.addEventListener("change", function() {
-        console.log("Selected font size:", this.value);
-    });
-
-    populateDropdowns();
-    toggleAdditionalInputs();
-
-    console.log("Script loaded and executed");
-});
 </script>
+</body>
 </html>

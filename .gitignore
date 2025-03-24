@@ -13,3 +13,6 @@ vendor/
 # Ignore all zip files except specific ones
 *.zip
 !example.zip
+
+# Ignoring testing file in js
+public/js/dammytest.js
