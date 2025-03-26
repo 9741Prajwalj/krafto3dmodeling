@@ -217,25 +217,37 @@ function createCopyright() {
         let width, height, targetMesh;
         switch (face) {
             case 'front':
+                width = box.params.length;
+                height = box.params.height;
+                targetMesh = box.els.frontHalf.length.side;
+                break;
             case 'back':
                 width = box.params.length;
                 height = box.params.height;
-                targetMesh = face === 'front' ? box.els.frontHalf.length.side : box.els.backHalf.length.side;
+                targetMesh = box.els.backHalf.length.side;
                 break;
             case 'left':
+                width = box.params.breadth;
+                height = box.params.height;
+                targetMesh = box.els.frontHalf.breadth.side;
+                break;
             case 'right':
                 width = box.params.breadth;
                 height = box.params.height;
-                targetMesh = face === 'left' ? box.els.frontHalf.breadth.side : box.els.backHalf.breadth.side;
+                targetMesh = box.els.backHalf.breadth.side;
                 break;
             case 'top':
+                width = box.params.length;
+                height = box.params.breadth;
+                targetMesh = box.els.frontHalf.length.top;
+                break;
             case 'bottom':
                 width = box.params.length;
                 height = box.params.breadth;
-                targetMesh = face === 'top' ? box.els.frontHalf.length.top : box.els.frontHalf.length.bottom; // Approximation
+                targetMesh = box.els.frontHalf.length.bottom;
                 break;
             default:
-                return;
+                return null;
         }
 
         // If mesh already exists, update it; otherwise, create new
@@ -246,72 +258,125 @@ function createCopyright() {
             const ctx = canvas.getContext('2d');
             const texture = new THREE.CanvasTexture(canvas);
             const geometry = new THREE.PlaneGeometry(width, height);
-            const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 1 });
+            const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
             faceMeshes[face] = new THREE.Mesh(geometry, material);
             scene.add(faceMeshes[face]);
         }
 
         // Position and rotate mesh based on target face
-        const mesh = faceMeshes[face];
-        mesh.position.copy(targetMesh.position);
-        mesh.rotation.copy(targetMesh.rotation);
-        if (face === 'front') mesh.position.z += box.params.thickness / 2 + 0.1;
-        if (face === 'back') mesh.position.z -= box.params.thickness / 2 + 0.1;
-        if (face === 'left') mesh.position.x -= box.params.thickness / 2 + 0.1;
-        if (face === 'right') mesh.position.x += box.params.thickness / 2 + 0.1;
-        if (face === 'top') mesh.position.y += box.params.height / 2 + 0.1;
-        if (face === 'bottom') mesh.position.y -= box.params.height / 2 + 0.1;
+    const mesh = faceMeshes[face];
+    const offset = 0.1; // Small offset to avoid z-fighting
 
-        return mesh;
+    // Reset position and rotation to match the target mesh, then adjust
+    mesh.position.copy(targetMesh.position);
+    mesh.rotation.set(0, 0, 0); // Reset rotation before applying face-specific rotation
+
+    switch (face) {
+        case 'front':
+            mesh.position.z += box.params.thickness / 2 + offset;
+            // No additional rotation needed; front face is already facing outward
+            break;
+        case 'back':
+            mesh.position.z -= box.params.thickness / 2 + offset;
+            mesh.rotation.y = Math.PI; // Rotate 180 degrees to face outward
+            break;
+        case 'left':
+            mesh.position.x -= box.params.thickness / 2 + offset;
+            mesh.rotation.y = -Math.PI / 2; // Rotate to face left
+            break;
+        case 'right':
+            mesh.position.x += box.params.thickness / 2 + offset;
+            mesh.rotation.y = Math.PI / 2; // Rotate to face right
+            break;
+        case 'top':
+            mesh.position.y += box.params.thickness / 2 + offset;
+            mesh.rotation.x = -Math.PI / 2; // Rotate to face upward
+            break;
+        case 'bottom':
+            mesh.position.y -= box.params.thickness / 2 + offset;
+            mesh.rotation.x = Math.PI / 2; // Rotate to face downward
+            break;
     }
+
+    return mesh;
+}
 
     // Function to update canvas with text and/or image
     function updateFaceCanvas(face, text, fontStyle, fontSize, image = null) {
         const mesh = createFaceMesh(face);
         if (!mesh) return;
+    
+        // Update canvas content
         const canvas = mesh.material.map.image;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+    
+        // Handle image drawing
         if (image) {
             const aspectRatio = image.width / image.height;
             const canvasAspect = canvas.width / canvas.height;
             let drawWidth = canvas.width;
             let drawHeight = canvas.height;
+    
             if (canvasAspect > aspectRatio) {
                 drawWidth = drawHeight * aspectRatio;
             } else {
                 drawHeight = drawWidth / aspectRatio;
             }
+    
             const xOffset = (canvas.width - drawWidth) / 2;
             const yOffset = (canvas.height - drawHeight) / 2;
-            ctx.drawImage(image, xOffset, yOffset, drawWidth, drawHeight);
+    
+            // Flip the image for back face
+            if (face === 'back') {
+                ctx.save();
+                ctx.scale(-1, 1);
+                ctx.drawImage(image, -xOffset - drawWidth, yOffset, drawWidth, drawHeight);
+                ctx.restore();
+            } else {
+                ctx.drawImage(image, xOffset, yOffset, drawWidth, drawHeight);
+            }
         }
-
+    
+        // Handle text drawing
         ctx.fillStyle = '#000000';
         const scaledFontSize = fontSize * 20;
         ctx.font = `${scaledFontSize}px ${fontStyle}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    
+        // Flip text for back face
+        if (face === 'back') {
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.fillText(text, -canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+        } else {
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        }
+    
         mesh.material.map.needsUpdate = true;
-
+    
         // Attach TransformControls to the selected face mesh
         transformControls.detach();
         transformControls.attach(mesh);
         selectedFaceMesh = mesh;
-    }
+    }    
 
     // Initial setup for front face (optional)
     const initialFontStyle = document.getElementById('fontStyle')?.value || 'Helvetica';
-    const initialFontSize = parseInt(document.getElementById('fontSize')?.value) || 20;
-    updateFaceCanvas('front', textInput.value || 'Your Text Here', initialFontStyle, initialFontSize);
+    const initialFontSize = parseInt(document.getElementById('fontSize')?.value) || 6;
+    const faces = ['front', 'back', 'left', 'right', 'top', 'bottom'];
+    faces.forEach(face => {
+        updateFaceCanvas(face, textInput.value || 'Your Text Here', initialFontStyle, initialFontSize);
+    });
 
-    // Text input listener
+    // Text input listener - apply to selected face
     textInput.addEventListener('input', () => {
         const fontStyle = document.getElementById('fontStyle')?.value || 'Helvetica';
-        const fontSize = parseInt(document.getElementById('fontSize')?.value) || 20;
-        updateFaceCanvas(selectedFace || 'front', textInput.value || 'Your Text Here', fontStyle, fontSize);
+        const fontSize = parseInt(document.getElementById('fontSize')?.value) || 6;
+        const face = selectedFace || 'front'; // Default to front if no face selected
+        updateFaceCanvas(face, textInput.value || 'Your Text Here', fontStyle, fontSize);
     });
 
     // File upload
@@ -335,9 +400,10 @@ function createCopyright() {
             const img = new Image();
             img.onload = () => {
                 const fontStyle = document.getElementById('fontStyle')?.value || 'Helvetica';
-                const fontSize = parseInt(document.getElementById('fontSize')?.value) || 20;
+                const fontSize = parseInt(document.getElementById('fontSize')?.value) || 6;
                 const text = textInput.value || 'Your Text Here';
-                updateFaceCanvas(selectedFace || 'front', text, fontStyle, fontSize, img);
+                const face = selectedFace || 'front'; // Default to front if no face selected
+                updateFaceCanvas(face, text, fontStyle, fontSize, img);
             };
             img.src = e.target.result;
         };
@@ -456,28 +522,59 @@ function updatePanelsTransform() {
     box.els.backHalf.breadth.bottom.rotation.x = -box.animated.flapAngles.backHalf.breadth.bottom;
     box.els.backHalf.length.bottom.rotation.x = -box.animated.flapAngles.backHalf.length.bottom;
 
+    // Update face meshes to follow their corresponding panels
+    const offset = 0.1; // Small offset to avoid z-fighting
     for (const face in faceMeshes) {
         const mesh = faceMeshes[face];
         let targetMesh;
+
+        // Determine the target mesh for each face
         switch (face) {
-            case 'front': targetMesh = box.els.frontHalf.length.side; break;
-            case 'back': targetMesh = box.els.backHalf.length.side; break;
-            case 'left': targetMesh = box.els.frontHalf.breadth.side; break;
-            case 'right': targetMesh = box.els.backHalf.breadth.side; break;
-            case 'top': targetMesh = box.els.frontHalf.length.top; break;
-            case 'bottom': targetMesh = box.els.frontHalf.length.bottom; break;
+            case 'front':
+                targetMesh = box.els.frontHalf.length.side;
+                mesh.position.copy(targetMesh.position);
+                mesh.rotation.copy(targetMesh.rotation);
+                mesh.position.z += box.params.thickness / 2 + offset;
+                break;
+            case 'back':
+                targetMesh = box.els.backHalf.length.side;
+                mesh.position.copy(targetMesh.position);
+                mesh.rotation.copy(targetMesh.rotation);
+                mesh.position.z -= box.params.thickness / 2 + offset;
+                mesh.rotation.y += Math.PI; // Ensure back face is oriented outward
+                break;
+            case 'left':
+                targetMesh = box.els.frontHalf.breadth.side;
+                mesh.position.copy(targetMesh.position);
+                mesh.rotation.copy(targetMesh.rotation);
+                mesh.position.x -= box.params.thickness / 2 + offset;
+                mesh.rotation.y -= Math.PI / 2; // Ensure left face is oriented outward
+                break;
+            case 'right':
+                targetMesh = box.els.backHalf.breadth.side;
+                mesh.position.copy(targetMesh.position);
+                mesh.rotation.copy(targetMesh.rotation);
+                mesh.position.x += box.params.thickness / 2 + offset;
+                mesh.rotation.y += Math.PI / 2; // Ensure right face is oriented outward
+                break;
+            case 'top':
+                targetMesh = box.els.frontHalf.length.top;
+                mesh.position.copy(targetMesh.position);
+                mesh.rotation.copy(targetMesh.rotation);
+                mesh.position.y += box.params.thickness / 2 + offset;
+                mesh.rotation.x += -Math.PI / 2; // Ensure top face is oriented upward
+                break;
+            case 'bottom':
+                targetMesh = box.els.frontHalf.length.bottom;
+                mesh.position.copy(targetMesh.position);
+                mesh.rotation.copy(targetMesh.rotation);
+                mesh.position.y -= box.params.thickness / 2 + offset;
+                mesh.rotation.x += Math.PI / 2; // Ensure bottom face is oriented downward
+                break;
         }
-        mesh.position.copy(targetMesh.position);
-        mesh.rotation.copy(targetMesh.rotation);
-        if (face === 'front') mesh.position.z += box.params.thickness /0.1;
-        if (face === 'back') mesh.position.z -= box.params.thickness / 0.1;
-        if (face === 'left') mesh.position.x -= box.params.thickness / 0.1;
-        if (face === 'right') mesh.position.x += box.params.thickness / 0.1;
-        if (face === 'top') mesh.position.y += box.params.height / 0.1;
-        if (face === 'bottom') mesh.position.y -= box.params.height / 0.1;
     }
 
-    // Update copyright position
+    // Update copyright position (if applicable)
     if (copyright) {
         const frontLengthSide = box.els.frontHalf.length.side;
         copyright.position.copy(frontLengthSide.position);
