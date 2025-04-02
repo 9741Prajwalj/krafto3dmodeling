@@ -474,7 +474,6 @@
                                             @endif
                                         </div>
                                         <!-- @include('frontend.amazy.pages.customize_modal') -->
-                                        <!-- Customize Modal -->
                                         
                                         <!-- Don't Toutch the code below -->
                                         <div class="add_wish_compare d-flex alingn-items-center mb_20">

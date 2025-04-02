@@ -549,19 +549,23 @@
                                 </div>
                             @endforeach
                         </div>
-                    @endif
-                    <div class="d-flex gap_10 align-items-center flex-wrap mt_20">
-                        <div class="d-none d-lg-flex align-items-center gap_10 flex-fill flex-wrap">
-                            <a href="{{url('/')}}" class="amaz_primary_btn2 style3">{{__('defaultTheme.continue_shopping')}}</a>
-                        </div>
-                        <a class="amaz_primary_btn min_200 style2 cursor_pointer @if (count($cartData) > 0) process_to_checkout_check @endif" data-value="{{$selected_product_check}}">{{__('defaultTheme.proceed_to_checkout')}}</a>
-                    </div>
+                        @endif
+                        <div class="d-flex gap_10 align-items-center flex-wrap mt_20">
+                            <div class="d-none d-lg-flex align-items-center gap_10 flex-fill flex-wrap">
+                                <a href="{{url('/')}}" class="amaz_primary_btn2 style3">{{__('defaultTheme.continue_shopping')}}</a>
+                                <button class="amaz_primary_btn2 style3" data-bs-toggle="modal" data-bs-target="#view3DModal">
+                                    {{__('view details')}}
+                                </button>
+                            </div>
+                        <a class="amaz_primary_btn min_200 style2 cursor_pointer @if(count($cartData) > 0) process_to_checkout_check @endif" 
+                        data-value="{{$selected_product_check}}">{{__('defaultTheme.proceed_to_checkout')}}</a>
+                    </div> 
                 </div>
-            <!-- for wholesale module -->
-            <input type="hidden" id="isWholeSaleActive" value="{{isModuleActive('WholeSale')}}">
-            <!-- for wholesale module -->
-            @endif
-        </div>
+                <!-- for wholesale module -->
+                <input type="hidden" id="isWholeSaleActive"     value="{{isModuleActive('WholeSale')}}">
+                <!-- for wholesale module -->
+                @endif
+            </div>
         @if(count($cartData) < 1)
             <div class="col-lg-12 text-center mb_50">
                 <span class="product_not_found">{{ __('defaultTheme.no_product_found') }}</span>

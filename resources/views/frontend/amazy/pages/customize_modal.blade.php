@@ -25,7 +25,8 @@
     <script type="module" src="{{ url('js/custom3d.js') }}"></script>
     <!-- External scripts -->
     <script src="{{ url('js/bootstrap.bundle.min.js') }}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
     <script src="https://unpkg.co/gsap@3/dist/gsap.min.js"></script>
 </head>
 <body>
@@ -118,7 +119,7 @@
                                             <li>10 Days</li>
                                             <li>Min Qty: 1000</li>
                                         </ul>
-                                        <p class="setup-charge">Setup Charge: <span class="price">7999</span></p>
+                                        <!-- <p class="setup-charge">Setup Charge: <span class="price">7999</span></p> -->
                                     </div>
                                 </div>
                             </div>
